@@ -125,6 +125,7 @@
     width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);
     border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;margin-bottom:10px;
   }
+  .evcard .stat b{display:block;}
   .evcard.live{border-color:var(--accent);background:linear-gradient(160deg,rgba(255,131,0,.10),rgba(255,131,0,.02));}
   .evcard .stat{display:flex;flex-direction:column;gap:2px;flex:1;}
   .evcard .stat b{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:600;}
@@ -336,9 +337,8 @@
       <div style="height:28px;"></div>
     </div>
 
-    <div class="pad safe-b col" style="padding-top:12px;gap:10px;border-top:1px solid var(--line);">
+    <div class="pad safe-b" style="padding-top:12px;border-top:1px solid var(--line);">
       <button class="btn" id="ev-save" onclick="saveEvent()">Save and start scanning</button>
-      <button class="btn ghost" id="ev-delete" onclick="confirmDeleteEvent()" style="display:none;color:#F2696E;border-color:rgba(242,105,110,.35);">Delete this event</button>
     </div>
   </section>
 
@@ -629,20 +629,22 @@
     <div class="pad" style="padding-top:12px;padding-bottom:12px;">
       <p class="dim" style="margin:0;font-size:13.5px;line-height:1.55;">MEDDIC, cut down to what a stand conversation actually yields. Set once for the event.</p>
     </div>
-    <div class="grow scroll pad" style="display:flex;flex-direction:column;gap:9px;">
-      <span class="eyebrow">WHAT A BOOTH NOTE USUALLY GIVES YOU</span>
-      <div class="card" id="rules-core" style="overflow:hidden;"></div>
-      <span class="eyebrow" style="margin-top:10px;">RARELY SAID AT A STAND</span>
-      <div class="card" id="rules-gap" style="overflow:hidden;"></div>
-      <p class="dim" style="font-size:12.5px;line-height:1.5;margin:2px 0 0;">Leave these on and they travel to Salesforce as named gaps for the account executive to fill, rather than looking like nothing was found.</p>
-      <div style="display:flex;align-items:flex-start;gap:11px;border:1px solid rgba(61,214,140,.25);background:rgba(61,214,140,.06);border-radius:14px;padding:14px;margin-top:10px;">
-        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style="flex-shrink:0;margin-top:1px;"><path d="M10 2.6l6.2 2.5v5c0 3.8-2.6 7-6.2 8.3-3.6-1.3-6.2-4.5-6.2-8.3v-5L10 2.6z" stroke="#3DD68C" stroke-width="1.4" stroke-linejoin="round"/></svg>
-        <div class="col" style="gap:3px;flex:1;">
-          <span style="font-size:13.5px;font-weight:600;color:var(--good);">Blank beats a guess</span>
-          <span class="muted" style="font-size:12.5px;line-height:1.5;">Not said out loud? The field stays empty. Can't be turned off.</span>
+    <div class="grow scroll pad">
+      <div class="col" style="gap:9px;">
+        <span class="eyebrow">WHAT A BOOTH NOTE USUALLY GIVES YOU</span>
+        <div class="card" id="rules-core" style="overflow:hidden;flex-shrink:0;"></div>
+        <span class="eyebrow" style="margin-top:10px;">RARELY SAID AT A STAND</span>
+        <div class="card" id="rules-gap" style="overflow:hidden;flex-shrink:0;"></div>
+        <p class="dim" style="font-size:12.5px;line-height:1.5;margin:2px 0 0;">Leave these on and they travel to Salesforce as named gaps for the account executive to fill, rather than looking like nothing was found.</p>
+        <div style="display:flex;align-items:flex-start;gap:11px;border:1px solid rgba(61,214,140,.25);background:rgba(61,214,140,.06);border-radius:14px;padding:14px;margin-top:10px;flex-shrink:0;">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style="flex-shrink:0;margin-top:1px;"><path d="M10 2.6l6.2 2.5v5c0 3.8-2.6 7-6.2 8.3-3.6-1.3-6.2-4.5-6.2-8.3v-5L10 2.6z" stroke="#3DD68C" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          <div class="col" style="gap:3px;flex:1;">
+            <span style="font-size:13.5px;font-weight:600;color:var(--good);">Blank beats a guess</span>
+            <span class="muted" style="font-size:12.5px;line-height:1.5;">Not said out loud? The field stays empty. Can't be turned off.</span>
+          </div>
         </div>
+        <div style="height:28px;"></div>
       </div>
-      <div style="height:24px;"></div>
     </div>
     <div class="pad safe-b" style="padding-top:12px;border-top:1px solid var(--line);">
       <button class="btn ghost" onclick="resetRules()">Put everything back on</button>
@@ -667,6 +669,7 @@
 
 <div id="edit-veil" style="display:none;position:fixed;inset:0;z-index:130;background:rgba(1,15,23,.72);">
   <div style="position:absolute;left:0;right:0;top:0;background:var(--surface);border-bottom:1px solid var(--line-2);border-radius:0 0 22px 22px;padding:calc(20px + env(safe-area-inset-top)) 20px 20px;">
+    <img id="edit-photo" alt="The card you photographed" style="display:none;width:100%;height:132px;object-fit:cover;border-radius:12px;background:var(--surface-2);margin-bottom:14px;">
     <div class="eyebrow" id="edit-label" style="margin-bottom:10px;">FIELD</div>
     <input id="edit-line" style="width:100%;background:var(--surface-2);border:1px solid var(--line-2);border-radius:12px;color:var(--ink);font-family:inherit;font-size:16px;padding:14px;outline:none;">
     <textarea id="edit-text" style="display:none;width:100%;min-height:130px;background:var(--surface-2);border:1px solid var(--line-2);border-radius:12px;color:var(--ink);font-family:inherit;font-size:16px;line-height:1.55;padding:14px;resize:none;outline:none;"></textarea>
@@ -818,8 +821,11 @@
   var editSave = null;
   var PENCIL = '<svg width="13" height="13" viewBox="0 0 20 20" fill="none" style="flex-shrink:0;opacity:.55;"><path d="M13.2 3.6l3.2 3.2L7.6 15.6 3.6 16.4l.8-4L13.2 3.6z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>';
 
-  window.openEdit = function(label, value, multiline, cb){
+  window.openEdit = function(label, value, multiline, cb, photo){
     editSave = cb;
+    var img = document.getElementById('edit-photo');
+    if(photo){ img.src = photo; img.style.display = 'block'; }
+    else { img.removeAttribute('src'); img.style.display = 'none'; }
     document.getElementById('edit-label').textContent = label;
     var ta = document.getElementById('edit-text'), inp = document.getElementById('edit-line');
     ta.style.display = multiline ? 'block' : 'none';
@@ -859,13 +865,13 @@
       re:/\b(has to|have to|must|needs? to|requirement|criteria|non.?negotiable|deal.?breaker|injection|spoof|liveness|accessib|latency|accuracy|certif|iso ?27001|soc ?2|gdpr|on.?prem|integrat|sdk)\b/i },
     { k:'competition', label:"WHO ELSE THEY'RE SEEING",meddic:'Competition',       core:true,
       re:/\b(compet\w*|incumbent|another (?:vendor|supplier|provider|tool|system|company)|other (?:vendors|suppliers|providers)|also (?:talking|looking|speaking) to|shortlist|rfp|tender|evaluating|versus|instead of|already (?:use|using))\b/i },
-    { k:'champion',    label:'CHAMPION SIGNAL',        core:true, meddic:'Champion',
+    { k:'champion',    label:'WHO IS ON OUR SIDE',      core:true, meddic:'Champion',
       re:/\b(keen|excited|enthusias|championing|pushing|advocat|wants to|will take|owns this|drive|sponsor|on board|loved|really interested)\b/i },
     { k:'economic',    label:'WHO HOLDS THE BUDGET',   meddic:'Economic buyer',    core:false,
       re:/\b(budget\w*|cfo|financ\w*|spend\w*|funded|funding|approve the (?:spend|budget)|signs the cheque|p&l|cost centre|economic buyer)\b/i },
     { k:'process',     label:'HOW THEY BUY',           meddic:'Decision process',  core:false,
       re:/\b(procur\w*|purchas\w*|tender|rfp|board approval|signs? ?off|sign.?off|committee|legal review|security review|vendor onboarding|framework agreement|paperwork|weeks? to (?:buy|approve)|approval process)\b/i },
-    { k:'next',        label:'NEXT STEP',              meddic:'Next step',         core:true,
+    { k:'next',        label:'WHAT WAS AGREED',        meddic:'Next step',         core:true,
       re:/\b(i'?ll\b|i will\b|we'?ll\b|we will\b|going to\b|need to\b|let'?s\b|next step|follow.?up|send (?:her|him|them|over|through|the)|intro(?:duce|duction)?\b|book (?:a|her|him|them)|schedule|arrange|set up a|demo\b|proposal|pilot|trial|catch up)\b/i }
   ];
   var NUM = /\b(\d[\d,.]*)\s*(k\b|m\b|thousand|million|billion|%|percent)?\b/i;
@@ -1044,10 +1050,15 @@
       var live = isLive(e);
       var when = e.start ? niceDates(e.start, e.end) : '';
 
-      var b = document.createElement('button');
-      b.className = 'evcard' + (live ? ' live' : '');
-      b.innerHTML =
-        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">' +
+      // a card, not a button — it holds its own delete control
+      var card = document.createElement('div');
+      card.className = 'evcard' + (live ? ' live' : '');
+
+      var open = document.createElement('button');
+      open.type = 'button';
+      open.style.cssText = 'width:100%;text-align:left;display:flex;flex-direction:column;gap:12px;';
+      open.innerHTML =
+        '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;width:100%;">' +
           '<div class="col" style="gap:5px;min-width:0;">' +
             '<span style="font-family:\'Space Grotesk\',sans-serif;font-size:18px;font-weight:600;letter-spacing:-.3px;">' + esc(e.name) + '</span>' +
             '<span class="dim" style="font-size:12.5px;">' + esc([e.venue, e.stand ? 'Stand ' + e.stand : '', when].filter(Boolean).join(' · ')) + '</span>' +
@@ -1055,13 +1066,27 @@
           (live ? '<span style="font-size:10.5px;font-weight:600;letter-spacing:.6px;color:var(--accent);border:1px solid rgba(255,131,0,.4);border-radius:6px;padding:4px 8px;flex-shrink:0;">LIVE</span>'
                 : '<span class="dim" style="font-size:10.5px;border:1px solid var(--line-2);border-radius:6px;padding:4px 8px;flex-shrink:0;">' + (e.start > today ? 'UPCOMING' : 'PAST') + '</span>') +
         '</div>' +
-        '<div style="display:flex;gap:0;border-top:1px solid ' + (live ? 'rgba(255,131,0,.18)' : 'var(--line)') + ';padding-top:12px;">' +
+        '<div style="display:flex;gap:0;width:100%;border-top:1px solid ' + (live ? 'rgba(255,131,0,.18)' : 'var(--line)') + ';padding-top:12px;">' +
           '<span class="stat"><b>' + people + '</b><span>PEOPLE</span></span>' +
           '<span class="stat"><b>' + cos.length + '</b><span>COMPANIES</span></span>' +
-          '<span class="stat"><b style="color:' + (unsent ? 'var(--warn)' : 'var(--good)') + '">' + unsent + '</b><span>NOT SENT</span></span>' +
+          '<span class="stat"><b style="color:' + (unsent ? 'var(--warn)' : 'var(--good)') + '">' + unsent + '</b><span>NOT IN CRM</span></span>' +
         '</div>';
-      onTap(b, function(){ openEventById(e.id); });
-      body.appendChild(b);
+      onTap(open, function(){ openEventById(e.id); });
+
+      var del = document.createElement('button');
+      del.type = 'button';
+      del.setAttribute('aria-label', 'Delete ' + e.name);
+      del.style.cssText = 'position:absolute;top:12px;right:12px;width:38px;height:38px;border-radius:11px;' +
+        'display:flex;align-items:center;justify-content:center;background:transparent;';
+      del.innerHTML = '<svg width="17" height="17" viewBox="0 0 20 20" fill="none">' +
+        '<path d="M4 6h12M8 6V4.5h4V6M6.5 6l.6 10h5.8l.6-10" stroke="#6E8A9B" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      del.addEventListener('click', function(ev){ ev.stopPropagation(); ev.preventDefault(); confirmDeleteEvent(e.id); });
+
+      card.style.position = 'relative';
+      card.style.paddingRight = '58px';
+      card.appendChild(open);
+      card.appendChild(del);
+      body.appendChild(card);
     });
     var sp = document.createElement('div'); sp.style.height = '20px'; body.appendChild(sp);
   };
@@ -1128,7 +1153,6 @@
     document.getElementById('ev-heading').textContent = editing ? 'Event settings' : 'Set up the event';
     document.getElementById('ev-back').style.display = state.events.length ? 'flex' : 'none';
     document.getElementById('ev-save').textContent = editing ? 'Save changes' : 'Save and start scanning';
-    document.getElementById('ev-delete').style.display = editing ? 'flex' : 'none';
     var d = new Date(), iso = function(x){ return x.toISOString().slice(0,10); };
     document.getElementById('ev-name').value = e ? e.name : '';
     document.getElementById('ev-venue').value = e ? e.venue : '';
@@ -1373,6 +1397,7 @@
     if(state.mode === 'badge'){ toast('Hold a QR code in the frame — or tap Sample'); return; }
     if(state.mode === 'manual'){
       ocrFields = { name:'', company:'', email:'', title:'', phone:'', _conf:{} };
+      cardPhoto = '';
       document.getElementById('card-img').removeAttribute('src');
       showCard(ocrFields, null);
       return;
@@ -1676,9 +1701,11 @@
     });
   }
   var CARDF = [ {k:'name',label:'NAME'},{k:'company',label:'COMPANY'},{k:'email',label:'EMAIL'},{k:'title',label:'TITLE'},{k:'phone',label:'PHONE'} ];
+  var cardPhoto = '';
   function showCard(f, thumb){
     ocrFields = f; if(!f._conf) f._conf = {};
-    if(thumb) document.getElementById('card-img').src = thumb;
+    if(thumb){ cardPhoto = thumb; document.getElementById('card-img').src = thumb; }
+    else if(!cardPhoto) document.getElementById('card-img').removeAttribute('src');
     var box = document.getElementById('card-fields'); box.innerHTML='';
     var wrap = document.createElement('div'); wrap.className='col'; wrap.style.gap='9px';
     CARDF.forEach(function(d){
@@ -1690,7 +1717,12 @@
         (v?'<span class="fval" style="flex:1;">'+esc(v)+'</span>':'<span class="fval empty" style="flex:1;">Nothing readable — tap to add</span>')+
         '<span style="color:var(--ink-3);display:flex;">'+PENCIL+'</span></span>'+
         (v&&shaky?'<span class="dim" style="font-size:12px;display:block;margin-top:5px;">Read at '+c+'% confidence.</span>':'');
-      onTap(b, function(){ openEdit(d.label, v, false, function(nv){ ocrFields[d.k]=nv; ocrFields._conf[d.k]= nv?100:0; showCard(ocrFields, null); }); });
+      onTap(b, function(){
+        openEdit(d.label, v, false, function(nv){
+          ocrFields[d.k] = nv; ocrFields._conf[d.k] = nv ? 100 : 0;
+          showCard(ocrFields, null);
+        }, cardPhoto);
+      });
       wrap.appendChild(b);
     });
     var note = document.createElement('p');
@@ -1964,7 +1996,7 @@
       var b = document.createElement('button'); b.type='button';
       b.className = 'field' + (v ? (d.k==='next'?' next':'') : (d.core ? ' blank' : ' gap'));
       b.innerHTML =
-        '<span class="flabel">'+d.label+'<span class="dim" style="letter-spacing:0"> · '+d.meddic+'</span>'+(mine?' · YOURS':'')+'</span>'+
+        '<span class="flabel">'+esc(d.meddic.toUpperCase())+'<span class="dim" style="letter-spacing:0"> · '+esc(plain(d.label))+'</span>'+(mine?' · YOURS':'')+'</span>'+
         '<span style="display:flex;align-items:center;gap:8px;">'+
         (v ? '<span class="fval" style="flex:1;">'+esc(v)+'</span>'
            : '<span class="fval empty" style="flex:1;">'+(d.core?'Not mentioned — tap to add':'For the account executive to establish')+'</span>')+
@@ -2188,7 +2220,7 @@
       (ae ? ae.name : '') + ' · ' + nc + (nc===1?' company':' companies');
     var unsent = evCompanies().filter(function(c){ return !c.sent; }).length;
     var btn = document.getElementById('l-sync');
-    btn.textContent = unsent ? 'Send ' + unsent + (unsent===1?' company':' companies') + ' to Salesforce' : 'Everything is sent';
+    btn.textContent = unsent ? 'Send ' + unsent + (unsent===1?' company':' companies') + ' to Salesforce' : 'Everything is in CRM';
     btn.disabled = !unsent;
     body.innerHTML='';
     if(!evCompanies().length){
@@ -2227,6 +2259,9 @@
      ========================================================= */
   window.openRules = function(){ renderRules(); go('s-rules'); };
   window.resetRules = function(){ MEDDIC.forEach(function(d){ ruleOn[d.k]=true; }); saveRules(); renderRules(); toast('All rules back on'); };
+  function plain(label){
+    return label.charAt(0) + label.slice(1).toLowerCase();
+  }
   function renderRules(){
     [['rules-core', true], ['rules-gap', false]].forEach(function(pair){
       var box = document.getElementById(pair[0]); box.innerHTML='';
@@ -2234,12 +2269,12 @@
       defs.forEach(function(d, i){
         var on = ruleOn[d.k];
         var r = document.createElement('button'); r.type='button';
-        r.style.cssText='display:flex;align-items:center;gap:12px;padding:9px 11px 9px 15px;width:100%;text-align:left;min-height:64px;'+
+        r.style.cssText='display:flex;align-items:center;gap:12px;padding:11px 11px 11px 15px;width:100%;text-align:left;min-height:70px;'+
           (i < defs.length-1 ? 'border-bottom:1px solid var(--line);' : '');
         r.innerHTML =
-          '<span class="col" style="gap:2px;flex:1;min-width:0;">'+
-            '<span style="font-size:14.5px;">'+esc(d.label.charAt(0)+d.label.slice(1).toLowerCase())+'</span>'+
-            '<span class="dim" style="font-size:11.5px;">'+esc(d.meddic)+'</span>'+
+          '<span class="col" style="gap:3px;flex:1;min-width:0;">'+
+            '<span style="font-size:15px;font-weight:600;">'+esc(d.meddic)+'</span>'+
+            '<span class="dim" style="font-size:12.5px;line-height:1.35;">'+esc(plain(d.label))+'</span>'+
           '</span>'+
           '<span style="width:44px;height:26px;border-radius:13px;background:'+(on?'var(--accent)':'#14526E')+
             ';display:flex;align-items:center;justify-content:'+(on?'flex-end':'flex-start')+';padding:3px;flex-shrink:0;box-sizing:border-box;">'+
@@ -2272,7 +2307,7 @@
       ['Campaign', function(){ return e.campaign || ''; }],
       ['Lead source', function(){ return e.source || ''; }],
       ['Rating', function(ct,co){ return heatFor(co); }],
-      ['Sent to CRM', function(ct,co){ return co.sent ? 'yes' : 'no'; }]
+      ['In CRM', function(ct,co){ return co.sent ? 'yes' : 'no'; }]
     ];
     MEDDIC.forEach(function(d){
       if(!ruleOn[d.k]) return;
@@ -2385,13 +2420,15 @@
     var ids = state._syncTargets || [], n = 0;
     ids.forEach(function(id){ var c = companyById(id); if(c && !c.sent){ c.sent = true; n++; } });
     save(); closeSync(); renderList();
-    toast(n + (n===1?' company':' companies') + ' sent — in the real app, anyway');
+    toast(n + (n===1?' company':' companies') + ' in CRM — in the real app, anyway');
   };
 
   var delTarget = null;
 
-  window.confirmDeleteEvent = function(){
-    var e = activeEvent(); if(!e) return;
+  window.confirmDeleteEvent = function(id){
+    var e = null, i;
+    for(i=0;i<state.events.length;i++) if(state.events[i].id === (id || state.activeId)) e = state.events[i];
+    if(!e) return;
     var people = state.contacts.filter(function(c){ return c.eventId === e.id; }).length;
     var cos = state.companies.filter(function(c){ return c.eventId === e.id; }).length;
     delTarget = { kind:'event', id:e.id };
