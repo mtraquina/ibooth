@@ -5,17 +5,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0E1116">
-<title>Booth Prototype</title>
+<meta name="theme-color" content="#011E2E">
+<title>iBooth</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 
 <style>
   :root{
-    --bg:#0E1116; --surface:#141920; --surface-2:#11161C;
-    --line:#1B2029; --line-2:#262C36;
-    --ink:#F3F5F7; --ink-2:#99A2AE; --ink-3:#667080; --ink-4:#4A525E;
-    --accent:#FF6B21; --accent-2:#FF8A4D;
-    --good:#3DD68C; --warn:#FFB020; --blue:#5B9DFF;
+    --bg:#011E2E; --surface:#023047; --surface-2:#012536;
+    --line:#0A3D55; --line-2:#14526E;
+    --ink:#F2F6F8; --ink-2:#9DB3C0; --ink-3:#6E8A9B; --ink-4:#4E6A7C;
+    --accent:#FF8300; --accent-2:#FFA340;
+    --good:#3DD68C; --warn:#FEB306; --blue:#8FC4E8;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--bg);}
@@ -55,26 +55,26 @@
   .mono{font-family:'IBM Plex Mono',ui-monospace,monospace;}
 
   .btn{
-    min-height:56px;border-radius:14px;background:var(--accent);color:#0E1116;
+    min-height:56px;border-radius:14px;background:var(--accent);color:#011E2E;
     font-size:16.5px;font-weight:600;display:flex;align-items:center;justify-content:center;gap:10px;
     width:100%;padding:0 18px;
   }
   .btn:active{transform:scale(.985);}
   .btn.ghost{background:transparent;border:1px solid var(--line-2);color:var(--ink-2);min-height:50px;font-weight:500;font-size:15px;}
-  .btn.white{background:#fff;color:#1A1D23;}
+  .btn.white{background:#fff;color:#023047;}
   .btn.sm{min-height:46px;font-size:14.5px;border-radius:12px;}
   .btn[disabled]{opacity:.4;pointer-events:none;}
 
   .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;}
   .iconbtn{width:44px;height:44px;border-radius:12px;background:var(--surface);border:1px solid var(--line-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
   .avatar{border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
-    font-family:'Space Grotesk',sans-serif;font-weight:600;background:#20252E;color:var(--ink-2);}
-  .avatar.hot{background:linear-gradient(145deg,#2E2622,#221E1C);color:#FF9A5C;}
+    font-family:'Space Grotesk',sans-serif;font-weight:600;background:#0D4460;color:var(--ink-2);}
+  .avatar.hot{background:linear-gradient(145deg,#0A3348,#052436);color:#FEB306;}
 
   .chip{border:1px solid var(--line-2);border-radius:999px;padding:8px 13px;font-size:12.5px;color:var(--ink-2);display:flex;align-items:center;gap:6px;}
   .chip.done{border-color:rgba(61,214,140,.35);background:rgba(61,214,140,.08);color:var(--good);}
   .tag{font-size:10.5px;font-weight:600;letter-spacing:.4px;border-radius:5px;padding:2px 6px;}
-  .tag.hot{color:var(--accent);border:1px solid rgba(255,107,33,.35);}
+  .tag.hot{color:var(--accent);border:1px solid rgba(255,131,0,.35);}
   .tag.warm{color:var(--ink-2);border:1px solid var(--line-2);}
   .tag.cold{color:var(--ink-3);border:1px solid var(--line);}
 
@@ -91,7 +91,7 @@
 
   .seg{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line-2);border-radius:12px;padding:4px;}
   .seg button{flex:1;min-height:44px;border-radius:9px;font-size:13px;font-weight:500;color:var(--ink-2);}
-  .seg button.on{background:var(--accent);color:#0E1116;font-weight:600;}
+  .seg button.on{background:var(--accent);color:#011E2E;font-weight:600;}
 
   /* scanner */
   #cam{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
@@ -103,10 +103,42 @@
   .c3{bottom:0;left:0;border-right:none;border-top:none;border-radius:0 0 0 14px;}
   .c4{bottom:0;right:0;border-left:none;border-top:none;border-radius:0 0 14px 0;}
   .scanline{position:absolute;left:10px;right:10px;height:2px;background:linear-gradient(90deg,transparent,var(--accent),transparent);
-    box-shadow:0 0 14px rgba(255,107,33,.7);animation:sweep 2.4s ease-in-out infinite;}
+    box-shadow:0 0 14px rgba(255,131,0,.7);animation:sweep 2.4s ease-in-out infinite;}
   @keyframes sweep{0%,100%{top:12%}50%{top:88%}}
   @media (prefers-reduced-motion:reduce){.scanline{animation:none;top:50%}}
-  .shutter{width:70px;height:70px;border-radius:50%;background:var(--accent);border:5px solid rgba(255,107,33,.22);display:flex;align-items:center;justify-content:center;}
+  .shutter{width:70px;height:70px;border-radius:50%;background:var(--accent);border:5px solid rgba(255,131,0,.22);display:flex;align-items:center;justify-content:center;}
+
+
+  /* multi-select option rows */
+  .opt{
+    display:flex;align-items:center;gap:12px;width:100%;text-align:left;min-height:54px;
+    background:var(--surface-2);border:1px solid var(--line-2);border-radius:12px;padding:0 14px;
+    font-family:inherit;font-size:15px;color:var(--ink-2);
+  }
+  .opt .box{width:22px;height:22px;border-radius:7px;border:1.5px solid var(--ink-3);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .opt.on{border-color:var(--accent);background:rgba(255,131,0,.07);color:var(--ink);}
+  .opt.on .box{background:var(--accent);border-color:var(--accent);}
+  .opt.on .box::after{content:"";width:9px;height:5px;border-left:2.5px solid #011E2E;border-bottom:2.5px solid #011E2E;transform:rotate(-45deg) translate(1px,-2px);}
+  .opt .sub{display:block;font-size:12px;color:var(--ink-4);margin-top:2px;line-height:1.35;}
+
+  /* language chips */
+  .lang{
+    display:inline-flex;align-items:center;gap:7px;min-height:40px;padding:0 12px;border-radius:999px;
+    border:1px solid var(--line-2);background:transparent;color:var(--ink-2);font-family:inherit;font-size:13.5px;
+  }
+  .lang.on{border-color:var(--accent);background:rgba(255,131,0,.10);color:var(--accent);font-weight:600;}
+  .lang .x{font-size:15px;line-height:1;opacity:.7;}
+
+  /* business card guide */
+  .cardguide{
+    position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+    width:86%;aspect-ratio:1.75;border:2px dashed rgba(255,131,0,.75);border-radius:12px;
+    display:none;
+  }
+  .cardguide::after{
+    content:"";position:absolute;inset:-1px;border-radius:12px;
+    box-shadow:0 0 0 2000px rgba(1,15,23,.35);
+  }
 
   /* wave */
   .wave{display:flex;align-items:center;justify-content:center;gap:3px;height:70px;}
@@ -114,7 +146,7 @@
 
   .steps .step{display:flex;gap:13px;padding:15px 16px;border-bottom:1px solid var(--line);align-items:flex-start;}
   .steps .step:last-child{border-bottom:none;}
-  .dot{width:19px;height:19px;border-radius:50%;border:1.5px solid #333B47;flex-shrink:0;margin-top:1px;}
+  .dot{width:19px;height:19px;border-radius:50%;border:1.5px solid #1B5C7C;flex-shrink:0;margin-top:1px;}
   .dot.live{border:2px solid var(--accent);border-top-color:transparent;animation:spin .9s linear infinite;}
   .dot.ok{border:none;background:rgba(61,214,140,.16);position:relative;}
   .dot.ok::after{content:"";position:absolute;left:5px;top:6px;width:8px;height:4px;border-left:2px solid var(--good);border-bottom:2px solid var(--good);transform:rotate(-45deg);}
@@ -128,8 +160,8 @@
   .field{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:11px 14px;font-family:inherit;color:inherit;-webkit-appearance:none;appearance:none;
     width:100%;text-align:left;display:flex;flex-direction:column;gap:4px;min-height:58px;}
   .field.blank{border-style:dashed;border-color:var(--line-2);background:transparent;}
-  .field.gap{border-style:dashed;border-color:rgba(91,157,255,.35);background:rgba(91,157,255,.05);}
-  .field.next{border-color:rgba(255,107,33,.3);background:rgba(255,107,33,.06);}
+  .field.gap{border-style:dashed;border-color:rgba(143,196,232,.35);background:rgba(143,196,232,.05);}
+  .field.next{border-color:rgba(255,131,0,.3);background:rgba(255,131,0,.06);}
   .flabel{font-size:10.5px;letter-spacing:.7px;color:var(--ink-3);}
   .field.next .flabel{color:var(--accent);}
   .field.gap .flabel{color:var(--blue);}
@@ -140,7 +172,7 @@
     border-radius:24px 24px 0 0;padding:14px 20px calc(28px + env(safe-area-inset-bottom));
     transform:translateY(100%);transition:transform .34s cubic-bezier(.32,.72,0,1);max-height:92%;overflow-y:auto;}
   .sheet.on{transform:translateY(0);}
-  .scrim{position:absolute;inset:0;background:rgba(6,8,11,.6);opacity:0;transition:opacity .3s;pointer-events:none;}
+  .scrim{position:absolute;inset:0;background:rgba(1,15,23,.6);opacity:0;transition:opacity .3s;pointer-events:none;}
   .scrim.on{opacity:1;pointer-events:auto;}
   .grab{width:38px;height:4px;border-radius:2px;background:var(--line-2);margin:0 auto 14px;}
 
@@ -165,11 +197,8 @@
   <!-- ============ SIGN IN ============ -->
   <section class="screen on" id="s-signin" style="justify-content:space-between;padding:72px 26px 34px;">
     <div>
-      <div class="row" style="gap:11px;margin-bottom:44px;">
-        <svg width="30" height="30" viewBox="0 0 30 30" fill="none"><circle cx="15" cy="15" r="13.2" stroke="#FF6B21" stroke-width="1.8"/><path d="M9.2 15.4l4 4 7.8-8.6" stroke="#FF6B21" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span style="font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:600;">iProov</span>
-      </div>
-      <h1 class="big">Booth</h1>
+      <div id="brand-mark" data-logo="30" style="margin-bottom:44px;"></div>
+      <h1 class="big">iBooth</h1>
       <p class="muted" style="margin:14px 0 0;font-size:16px;line-height:1.5;max-width:19em;">Scan everyone. Say what happened once. The write-up is waiting when you sit down.</p>
     </div>
     <div class="col" style="gap:16px;">
@@ -185,7 +214,7 @@
   <section class="screen" id="s-event">
     <div class="pad row" style="padding-top:22px;padding-bottom:10px;gap:12px;">
       <button class="iconbtn" id="ev-back" onclick="go('s-list');renderList()" aria-label="Back" style="display:none;">
-        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M12 4l-6 6 6 6" stroke="#99A2AE" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M12 4l-6 6 6 6" stroke="#9DB3C0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="col" style="gap:3px;">
         <span class="eyebrow" id="ev-step">STEP ONE</span>
@@ -227,22 +256,27 @@
         <span class="eyebrow">HOW PEOPLE GET CAPTURED</span>
 
         <div class="fld">
-          <label>BADGE SOURCE</label>
-          <div class="seg" id="ev-badge">
-            <button type="button" data-src="api" onclick="setBadgeSource('api')">Organiser API</button>
-            <button type="button" data-src="qr" class="on" onclick="setBadgeSource('qr')">QR only</button>
-            <button type="button" data-src="card" onclick="setBadgeSource('card')">Cards only</button>
+          <label>HOW PEOPLE GET CAPTURED</label>
+          <div class="col" id="ev-badge" style="gap:8px;">
+            <button type="button" class="opt on" data-src="qr"><span class="box"></span><span>Badge QR or barcode<span class="sub">Whatever the badge encodes</span></span></button>
+            <button type="button" class="opt" data-src="api"><span class="box"></span><span>Organiser lead API<span class="sub">Best data, when they offer it</span></span></button>
+            <button type="button" class="opt on" data-src="card"><span class="box"></span><span>Business card<span class="sub">Your fallback when badges fail</span></span></button>
+            <button type="button" class="opt" data-src="manual"><span class="box"></span><span>Type by hand<span class="sub">Last resort</span></span></button>
           </div>
-          <span class="hint" id="ev-badge-hint">Read whatever the badge encodes. Business card reading stays available either way.</span>
+          <span class="hint" id="ev-badge-hint">Pick every method this show might need — the scanner offers whichever you tick.</span>
         </div>
         <div class="fld" id="ev-key-wrap" style="display:none;">
           <label for="ev-key">ORGANISER API KEY</label>
           <input id="ev-key" placeholder="Paste the key the organiser gave you" autocomplete="off">
         </div>
         <div class="fld">
-          <label for="ev-lang">EXPECTED LANGUAGES</label>
-          <input id="ev-lang" placeholder="English, Spanish, Dutch" autocomplete="off">
-          <span class="hint">Improves transcription noticeably at European shows.</span>
+          <label>LANGUAGES YOU EXPECT TO HEAR</label>
+          <div class="row" id="ev-langs" style="flex-wrap:wrap;gap:7px;"></div>
+          <div class="row" style="gap:8px;margin-top:2px;">
+            <input id="ev-lang-add" placeholder="Add another language" autocomplete="off" style="flex:1;">
+            <button type="button" class="btn ghost" style="width:auto;padding:0 16px;min-height:52px;" onclick="addLanguage()">Add</button>
+          </div>
+          <span class="hint">Tap to turn one on or off. Improves transcription noticeably at European shows.</span>
         </div>
         <div class="fld">
           <label for="ev-retain">DELETE AUDIO AFTER</label>
@@ -271,30 +305,31 @@
         <span class="dim" style="font-size:10px;letter-spacing:.4px;">SCANNED</span>
       </div>
       <button class="iconbtn" style="margin-left:10px;" onclick="go('s-list');renderList()" aria-label="Leads">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h10" stroke="#99A2AE" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 6h16M4 12h16M4 18h10" stroke="#9DB3C0" stroke-width="1.8" stroke-linecap="round"/></svg>
       </button>
     </div>
 
     <div class="viewport">
       <video id="cam" playsinline muted autoplay></video>
+      <div class="cardguide" id="cardguide"></div>
       <div class="reticle" id="reticle">
         <div class="corner c1"></div><div class="corner c2"></div><div class="corner c3"></div><div class="corner c4"></div>
         <div class="scanline"></div>
       </div>
-      <div id="scan-status" style="display:none;position:absolute;top:12px;left:12px;background:rgba(14,17,22,.8);border:1px solid var(--line-2);border-radius:8px;padding:6px 10px;font-size:11px;color:var(--ink-2);">
+      <div id="scan-status" style="display:none;position:absolute;top:12px;left:12px;background:rgba(1,30,46,.8);border:1px solid var(--line-2);border-radius:8px;padding:6px 10px;font-size:11px;color:var(--ink-2);">
         <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--good);margin-right:6px;"></span><span id="scan-status-text">looking</span>
       </div>
-      <div id="diag" style="display:none;position:absolute;inset:14px;overflow-y:auto;background:rgba(14,17,22,.93);border:1px solid var(--line-2);border-radius:14px;padding:16px;">
+      <div id="diag" style="display:none;position:absolute;inset:14px;overflow-y:auto;background:rgba(1,30,46,.93);border:1px solid var(--line-2);border-radius:14px;padding:16px;">
         <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Camera didn't start</div>
         <div id="diag-why" class="muted" style="font-size:13px;line-height:1.5;margin-bottom:12px;"></div>
         <div id="diag-list" class="mono" style="font-size:12px;line-height:1.9;"></div>
         <div id="diag-fix" style="font-size:12.5px;line-height:1.55;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);color:var(--ink-2);"></div>
       </div>
-      <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 20px 16px;background:linear-gradient(to top,rgba(14,17,22,.94),rgba(14,17,22,0));">
-        <p style="margin:0 0 10px;font-size:13.5px;line-height:1.45;text-align:center;color:#C9D0D9;" id="scan-hint">Point at a QR code — any QR code will do</p>
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:14px 20px 16px;background:linear-gradient(to top,rgba(1,30,46,.94),rgba(1,30,46,0));">
+        <p style="margin:0 0 10px;font-size:13.5px;line-height:1.45;text-align:center;color:#CFE0E9;" id="scan-hint">Point at a QR code — any QR code will do</p>
         <div style="display:flex;justify-content:center;">
-          <label style="min-height:44px;display:inline-flex;align-items:center;gap:8px;background:rgba(14,17,22,.75);border:1px solid var(--line-2);border-radius:11px;padding:0 14px;font-size:13px;color:var(--ink-2);cursor:pointer;">
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="2.5" y="4.5" width="15" height="12" rx="2.5" stroke="#99A2AE" stroke-width="1.4"/><circle cx="10" cy="10.5" r="3.2" stroke="#99A2AE" stroke-width="1.4"/><path d="M7 4.5l1.2-1.8h3.6L13 4.5" stroke="#99A2AE" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          <label style="min-height:44px;display:inline-flex;align-items:center;gap:8px;background:rgba(1,30,46,.75);border:1px solid var(--line-2);border-radius:11px;padding:0 14px;font-size:13px;color:var(--ink-2);cursor:pointer;">
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><rect x="2.5" y="4.5" width="15" height="12" rx="2.5" stroke="#9DB3C0" stroke-width="1.4"/><circle cx="10" cy="10.5" r="3.2" stroke="#9DB3C0" stroke-width="1.4"/><path d="M7 4.5l1.2-1.8h3.6L13 4.5" stroke="#9DB3C0" stroke-width="1.4" stroke-linejoin="round"/></svg>
             Scan from a photo
             <input type="file" accept="image/*" capture="environment" id="photo-in" style="display:none;" onchange="scanPhoto(this)">
           </label>
@@ -310,8 +345,8 @@
           <span style="font-size:14.5px;font-weight:600;" id="gb-name">–</span>
           <span class="dim" style="font-size:12.5px;" id="gb-sub">–</span>
         </div>
-        <span style="display:flex;align-items:center;gap:7px;background:rgba(255,107,33,.12);border:1px solid rgba(255,107,33,.32);border-radius:10px;padding:9px 12px;color:var(--accent);font-size:13px;font-weight:600;flex-shrink:0;">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="9" y="2.5" width="6" height="11.5" rx="3" stroke="#FF6B21" stroke-width="2"/><path d="M5.5 11.5a6.5 6.5 0 0013 0M12 18v3.5" stroke="#FF6B21" stroke-width="2" stroke-linecap="round"/></svg>
+        <span style="display:flex;align-items:center;gap:7px;background:rgba(255,131,0,.12);border:1px solid rgba(255,131,0,.32);border-radius:10px;padding:9px 12px;color:var(--accent);font-size:13px;font-weight:600;flex-shrink:0;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><rect x="9" y="2.5" width="6" height="11.5" rx="3" stroke="#FF8300" stroke-width="2"/><path d="M5.5 11.5a6.5 6.5 0 0013 0M12 18v3.5" stroke="#FF8300" stroke-width="2" stroke-linecap="round"/></svg>
           Note
         </span>
       </button>
@@ -320,12 +355,9 @@
     <div class="pad row" style="justify-content:space-between;padding-top:12px;padding-bottom:calc(18px + env(safe-area-inset-bottom));">
       <button class="btn ghost" style="width:auto;padding:0 14px;min-height:46px;font-size:13.5px;" onclick="sampleVisitor()">Sample</button>
       <button class="shutter" onclick="manualCapture()" aria-label="Capture">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.6" stroke="#0E1116" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1.6" stroke="#0E1116" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1.6" stroke="#0E1116" stroke-width="2"/><path d="M14 14h3v3h-3zM18.5 18.5H21V21h-2.5z" fill="#0E1116"/></svg>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.6" stroke="#011E2E" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1.6" stroke="#011E2E" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1.6" stroke="#011E2E" stroke-width="2"/><path d="M14 14h3v3h-3zM18.5 18.5H21V21h-2.5z" fill="#011E2E"/></svg>
       </button>
-      <div class="seg" style="width:auto;padding:3px;">
-        <button data-mode="badge" class="on" onclick="setMode('badge')" style="min-height:40px;padding:0 10px;font-size:12px;">QR</button>
-        <button data-mode="card" onclick="setMode('card')" style="min-height:40px;padding:0 10px;font-size:12px;">Card</button>
-      </div>
+      <div class="seg" id="mode-seg" style="width:auto;padding:3px;"></div>
     </div>
   </section>
 
@@ -333,7 +365,7 @@
   <section class="screen" id="s-card">
     <div class="pad row" style="padding-top:20px;padding-bottom:12px;gap:14px;">
       <button class="iconbtn" onclick="go('s-scan');startCamera()" aria-label="Back">
-        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M12 4l-6 6 6 6" stroke="#99A2AE" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M12 4l-6 6 6 6" stroke="#9DB3C0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <h3 class="sm">Check what we read</h3>
     </div>
@@ -351,7 +383,7 @@
   <section class="screen" id="s-record">
     <div class="pad row" style="padding-top:20px;gap:12px;">
       <button class="iconbtn" onclick="cancelRecording()" aria-label="Cancel">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#99A2AE" stroke-width="2" stroke-linecap="round"/></svg>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#9DB3C0" stroke-width="2" stroke-linecap="round"/></svg>
       </button>
       <div class="col" style="gap:2px;min-width:0;flex:1;">
         <span style="font-size:15px;font-weight:600;" id="r-title">–</span>
@@ -395,8 +427,8 @@
     </div>
 
     <div class="pad row" style="justify-content:center;padding-top:6px;padding-bottom:calc(18px + env(safe-area-inset-bottom));">
-      <button style="width:76px;height:76px;border-radius:50%;background:var(--accent);border:5px solid rgba(255,107,33,.22);display:flex;align-items:center;justify-content:center;" onclick="stopRecording()" aria-label="Stop">
-        <span style="width:24px;height:24px;border-radius:6px;background:#0E1116;display:block;"></span>
+      <button style="width:76px;height:76px;border-radius:50%;background:var(--accent);border:5px solid rgba(255,131,0,.22);display:flex;align-items:center;justify-content:center;" onclick="stopRecording()" aria-label="Stop">
+        <span style="width:24px;height:24px;border-radius:6px;background:#011E2E;display:block;"></span>
       </button>
     </div>
   </section>
@@ -427,11 +459,11 @@
   <section class="screen" id="s-company">
     <div class="pad row" style="padding-top:20px;">
       <button class="iconbtn" onclick="go('s-list');renderList()" aria-label="Back">
-        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M12 4l-6 6 6 6" stroke="#99A2AE" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M12 4l-6 6 6 6" stroke="#9DB3C0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <div class="spacer"></div>
       <button class="iconbtn" onclick="confirmDelete()" aria-label="Delete this company" style="margin-right:10px;">
-        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M4 6h12M8 6V4.5h4V6M6.5 6l.6 10h5.8l.6-10" stroke="#99A2AE" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M4 6h12M8 6V4.5h4V6M6.5 6l.6 10h5.8l.6-10" stroke="#9DB3C0" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <button class="tag" id="c-heat" onclick="cycleHeat()" style="min-height:34px;padding:0 10px;">–</button>
     </div>
@@ -440,7 +472,7 @@
       <div class="col" style="gap:2px;min-width:0;flex:1;">
         <button onclick="editCompanyName()" style="text-align:left;display:flex;align-items:center;gap:8px;min-height:32px;">
           <span style="font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:600;letter-spacing:-.4px;" id="c-name">–</span>
-          <svg width="13" height="13" viewBox="0 0 20 20" fill="none" style="opacity:.5;flex-shrink:0;"><path d="M13.2 3.6l3.2 3.2L7.6 15.6 3.6 16.4l.8-4L13.2 3.6z" stroke="#99A2AE" stroke-width="1.5" stroke-linejoin="round"/></svg>
+          <svg width="13" height="13" viewBox="0 0 20 20" fill="none" style="opacity:.5;flex-shrink:0;"><path d="M13.2 3.6l3.2 3.2L7.6 15.6 3.6 16.4l.8-4L13.2 3.6z" stroke="#9DB3C0" stroke-width="1.5" stroke-linejoin="round"/></svg>
         </button>
         <span class="dim" style="font-size:13px;" id="c-sub">–</span>
       </div>
@@ -456,11 +488,11 @@
     <div class="grow scroll pad" style="padding-top:14px;" id="c-body"></div>
     <div class="pad row safe-b" style="gap:10px;padding-top:12px;border-top:1px solid var(--line);">
       <button class="btn ghost" id="c-note-btn" style="width:auto;padding:0 16px;" onclick="noteForCompany(window.viewingId)">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="9" y="2.5" width="6" height="11.5" rx="3" stroke="#99A2AE" stroke-width="2"/><path d="M5.5 11.5a6.5 6.5 0 0013 0M12 18v3.5" stroke="#99A2AE" stroke-width="2" stroke-linecap="round"/></svg>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="9" y="2.5" width="6" height="11.5" rx="3" stroke="#9DB3C0" stroke-width="2"/><path d="M5.5 11.5a6.5 6.5 0 0013 0M12 18v3.5" stroke="#9DB3C0" stroke-width="2" stroke-linecap="round"/></svg>
         Note
       </button>
       <button class="btn" style="flex:1;" onclick="openSync()">
-        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M3 7.5l7-4 7 4-7 4-7-4z" stroke="#0E1116" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 12.5l7 4 7-4" stroke="#0E1116" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M3 7.5l7-4 7 4-7 4-7-4z" stroke="#011E2E" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 12.5l7 4 7-4" stroke="#011E2E" stroke-width="1.7" stroke-linejoin="round"/></svg>
         Send to Salesforce
       </button>
     </div>
@@ -470,18 +502,21 @@
   <section class="screen" id="s-list">
     <div class="pad row" style="padding-top:20px;padding-bottom:14px;align-items:flex-end;">
       <div class="col" style="gap:4px;min-width:0;">
-        <span class="dim" style="font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="l-event">–</span>
+        <div class="row" style="gap:8px;min-width:0;">
+          <span data-logo="14" style="flex-shrink:0;opacity:.9;"></span>
+          <span class="dim" style="font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="l-event">–</span>
+        </div>
         <h2 class="mid" id="l-count" style="font-size:20px;letter-spacing:-.4px;white-space:nowrap;">–</h2>
       </div>
       <div class="spacer"></div>
       <button class="iconbtn" onclick="openExport()" aria-label="Export">
-        <svg width="19" height="19" viewBox="0 0 20 20" fill="none"><path d="M10 3v9M6.5 8.5L10 12l3.5-3.5M3.5 15.5h13" stroke="#99A2AE" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg width="19" height="19" viewBox="0 0 20 20" fill="none"><path d="M10 3v9M6.5 8.5L10 12l3.5-3.5M3.5 15.5h13" stroke="#9DB3C0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <button class="iconbtn" onclick="openRules()" aria-label="Rules" style="margin-left:8px;">
-        <svg width="19" height="19" viewBox="0 0 20 20" fill="none"><path d="M4 6h12M4 10h12M4 14h12" stroke="#99A2AE" stroke-width="1.6" stroke-linecap="round"/><circle cx="7.5" cy="6" r="2" fill="#141920" stroke="#99A2AE" stroke-width="1.6"/><circle cx="13" cy="10" r="2" fill="#141920" stroke="#99A2AE" stroke-width="1.6"/><circle cx="8.5" cy="14" r="2" fill="#141920" stroke="#99A2AE" stroke-width="1.6"/></svg>
+        <svg width="19" height="19" viewBox="0 0 20 20" fill="none"><path d="M4 6h12M4 10h12M4 14h12" stroke="#9DB3C0" stroke-width="1.6" stroke-linecap="round"/><circle cx="7.5" cy="6" r="2" fill="#023047" stroke="#9DB3C0" stroke-width="1.6"/><circle cx="13" cy="10" r="2" fill="#023047" stroke="#9DB3C0" stroke-width="1.6"/><circle cx="8.5" cy="14" r="2" fill="#023047" stroke="#9DB3C0" stroke-width="1.6"/></svg>
       </button>
       <button class="iconbtn" onclick="go('s-scan');startCamera()" aria-label="Scan" style="margin-left:8px;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.6" stroke="#99A2AE" stroke-width="1.8"/><rect x="14" y="3" width="7" height="7" rx="1.6" stroke="#99A2AE" stroke-width="1.8"/><rect x="3" y="14" width="7" height="7" rx="1.6" stroke="#99A2AE" stroke-width="1.8"/><path d="M14 14h3v3h-3z" fill="#99A2AE"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.6" stroke="#9DB3C0" stroke-width="1.8"/><rect x="14" y="3" width="7" height="7" rx="1.6" stroke="#9DB3C0" stroke-width="1.8"/><rect x="3" y="14" width="7" height="7" rx="1.6" stroke="#9DB3C0" stroke-width="1.8"/><path d="M14 14h3v3h-3z" fill="#9DB3C0"/></svg>
       </button>
     </div>
     <div class="grow scroll pad" id="l-body"></div>
@@ -520,7 +555,7 @@
   <section class="screen" id="s-rules">
     <div class="pad row" style="padding-top:20px;padding-bottom:4px;gap:14px;">
       <button class="iconbtn" onclick="go('s-list');renderList()" aria-label="Back">
-        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M12 4l-6 6 6 6" stroke="#99A2AE" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M12 4l-6 6 6 6" stroke="#9DB3C0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
       <h3 class="sm">What a note turns into</h3>
     </div>
@@ -551,7 +586,7 @@
 
 <div class="toast" id="toast"></div>
 
-<div id="del-veil" style="display:none;position:fixed;inset:0;z-index:125;background:rgba(6,8,11,.72);">
+<div id="del-veil" style="display:none;position:fixed;inset:0;z-index:125;background:rgba(1,15,23,.72);">
   <div style="position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line-2);border-radius:22px 22px 0 0;padding:14px 20px calc(28px + env(safe-area-inset-bottom));">
     <div class="grab"></div>
     <h2 class="mid" style="font-size:20px;">Delete <span id="del-name">this</span>?</h2>
@@ -563,7 +598,7 @@
   </div>
 </div>
 
-<div id="edit-veil" style="display:none;position:fixed;inset:0;z-index:130;background:rgba(6,8,11,.72);">
+<div id="edit-veil" style="display:none;position:fixed;inset:0;z-index:130;background:rgba(1,15,23,.72);">
   <div style="position:absolute;left:0;right:0;top:0;background:var(--surface);border-bottom:1px solid var(--line-2);border-radius:0 0 22px 22px;padding:calc(20px + env(safe-area-inset-top)) 20px 20px;">
     <div class="eyebrow" id="edit-label" style="margin-bottom:10px;">FIELD</div>
     <input id="edit-line" style="width:100%;background:var(--surface-2);border:1px solid var(--line-2);border-radius:12px;color:var(--ink);font-family:inherit;font-size:16px;padding:14px;outline:none;">
@@ -576,10 +611,10 @@
   </div>
 </div>
 
-<div id="ocr-veil" style="display:none;position:fixed;inset:0;background:rgba(14,17,22,.93);z-index:120;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:32px;">
-  <svg width="42" height="42" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2.5" stroke="#FF6B21" stroke-width="1.6"/><path d="M7 10h7M7 13.5h10" stroke="#FF6B21" stroke-width="1.6" stroke-linecap="round"/></svg>
+<div id="ocr-veil" style="display:none;position:fixed;inset:0;background:rgba(1,30,46,.93);z-index:120;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:32px;">
+  <svg width="42" height="42" viewBox="0 0 24 24" fill="none"><rect x="3" y="5" width="18" height="14" rx="2.5" stroke="#FF8300" stroke-width="1.6"/><path d="M7 10h7M7 13.5h10" stroke="#FF8300" stroke-width="1.6" stroke-linecap="round"/></svg>
   <div style="font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:600;" id="ocr-veil-title">Reading the card</div>
-  <div style="width:210px;height:4px;border-radius:2px;background:#262C36;overflow:hidden;"><div id="ocr-bar" style="width:6%;height:100%;background:#FF6B21;transition:width .3s;"></div></div>
+  <div style="width:210px;height:4px;border-radius:2px;background:#14526E;overflow:hidden;"><div id="ocr-bar" style="width:6%;height:100%;background:#FF8300;transition:width .3s;"></div></div>
   <div class="dim" style="font-size:12.5px;text-align:center;line-height:1.5;max-width:20em;" id="ocr-veil-sub">First card takes a few seconds.</div>
 </div>
 <script>
@@ -632,12 +667,25 @@
   }
 
   /* ---------- tap helper (Safari fires click unreliably on non-buttons) ---------- */
+  /* Everything tappable is a real <button>, so click alone is reliable.
+     The old touchend fallback fired after a scroll gesture too, which is why
+     the write-up kept opening the editor while you were only scrolling. */
   function onTap(el, fn){
     if(!el) return;
-    var fired = 0;
-    function run(e){ if(Date.now()-fired < 600) return; fired = Date.now(); e.preventDefault(); fn(); }
-    el.addEventListener('click', run);
-    el.addEventListener('touchend', run, { passive:false });
+    var sx = 0, sy = 0, moved = false;
+    el.addEventListener('touchstart', function(e){
+      var t = e.touches && e.touches[0];
+      sx = t ? t.clientX : 0; sy = t ? t.clientY : 0; moved = false;
+    }, { passive:true });
+    el.addEventListener('touchmove', function(e){
+      var t = e.touches && e.touches[0]; if(!t) return;
+      if(Math.abs(t.clientX - sx) > 8 || Math.abs(t.clientY - sy) > 8) moved = true;
+    }, { passive:true });
+    el.addEventListener('click', function(e){
+      if(moved){ moved = false; return; }
+      e.preventDefault();
+      fn();
+    });
   }
   window.onTap = onTap;
 
@@ -842,17 +890,49 @@
     else { fillEventForm(); go('s-event'); }
   };
 
-  var badgeSource = 'qr';
-  window.setBadgeSource = function(v){
-    badgeSource = v;
-    Array.prototype.forEach.call(document.querySelectorAll('#ev-badge button'), function(b){
-      b.classList.toggle('on', b.dataset.src === v);
+  var badgeSources = ['qr','card'];
+  var COMMON_LANGS = ['English','Spanish','French','German','Dutch','Portuguese','Italian','Polish','Arabic','Japanese'];
+  var languages = ['English'];
+
+  function paintBadgeSources(){
+    Array.prototype.forEach.call(document.querySelectorAll('#ev-badge .opt'), function(b){
+      b.classList.toggle('on', badgeSources.indexOf(b.dataset.src) > -1);
     });
-    document.getElementById('ev-key-wrap').style.display = v === 'api' ? 'flex' : 'none';
-    var h = { api:'The organiser resolves a badge into a person. Best data, if they offer it.',
-              qr:'Read whatever the badge encodes. Business card reading stays available either way.',
-              card:'No usable badges at this show — capture business cards instead.' };
-    document.getElementById('ev-badge-hint').textContent = h[v];
+    document.getElementById('ev-key-wrap').style.display = badgeSources.indexOf('api') > -1 ? 'flex' : 'none';
+    document.getElementById('ev-badge-hint').textContent = badgeSources.length
+      ? 'The scanner will offer ' + badgeSources.length + ' way' + (badgeSources.length===1?'':'s') + ' to capture someone.'
+      : 'Pick at least one — otherwise there is no way to capture anyone.';
+  }
+  function toggleBadgeSource(v){
+    var i = badgeSources.indexOf(v);
+    if(i > -1) badgeSources.splice(i, 1); else badgeSources.push(v);
+    paintBadgeSources();
+  }
+
+  function paintLanguages(){
+    var box = document.getElementById('ev-langs'); box.innerHTML='';
+    var shown = COMMON_LANGS.slice();
+    languages.forEach(function(l){ if(shown.indexOf(l) === -1) shown.unshift(l); });
+    shown.forEach(function(l){
+      var on = languages.indexOf(l) > -1;
+      var b = document.createElement('button');
+      b.type='button'; b.className = 'lang' + (on ? ' on' : '');
+      b.innerHTML = esc(l) + (on ? '<span class="x">×</span>' : '');
+      b.addEventListener('click', function(e){
+        e.preventDefault();
+        var i = languages.indexOf(l);
+        if(i > -1) languages.splice(i, 1); else languages.push(l);
+        paintLanguages();
+      });
+      box.appendChild(b);
+    });
+  }
+  window.addLanguage = function(){
+    var el = document.getElementById('ev-lang-add'), v = el.value.trim();
+    if(!v) return;
+    v = v.charAt(0).toUpperCase() + v.slice(1);
+    if(languages.indexOf(v) === -1) languages.push(v);
+    el.value = ''; paintLanguages();
   };
 
   function fillEventForm(){
@@ -870,17 +950,26 @@
     document.getElementById('ev-campaign').value = e ? e.campaign : '';
     document.getElementById('ev-source').value = e ? e.source : 'Trade show';
     document.getElementById('ev-followup').value = e ? e.followup : 3;
-    document.getElementById('ev-lang').value = e ? e.languages : 'English';
     document.getElementById('ev-retain').value = e ? e.retain : 30;
     document.getElementById('ev-key').value = e ? (e.apiKey || '') : '';
-    setBadgeSource(e ? e.badgeSource : 'qr');
+    badgeSources = (e && e.badgeSources && e.badgeSources.length) ? e.badgeSources.slice() : ['qr','card'];
+    languages = (e && e.languages && e.languages.length) ? e.languages.slice() : ['English'];
+    paintBadgeSources(); paintLanguages();
   }
 
   window.editEvent = function(){ fillEventForm(); go('s-event'); };
 
+  Array.prototype.forEach.call(document.querySelectorAll('#ev-badge .opt'), function(b){
+    b.addEventListener('click', function(e){ e.preventDefault(); toggleBadgeSource(b.dataset.src); });
+  });
+  document.getElementById('ev-lang-add').addEventListener('keydown', function(e){
+    if(e.key === 'Enter'){ e.preventDefault(); addLanguage(); }
+  });
+
   window.saveEvent = function(){
     var name = document.getElementById('ev-name').value.trim();
     if(!name){ toast('The event needs a name'); document.getElementById('ev-name').focus(); return; }
+    if(!badgeSources.length){ toast('Pick at least one way to capture someone'); return; }
     state.event = {
       name: name,
       venue: document.getElementById('ev-venue').value.trim(),
@@ -890,9 +979,9 @@
       campaign: document.getElementById('ev-campaign').value.trim(),
       source: document.getElementById('ev-source').value.trim() || 'Trade show',
       followup: parseInt(document.getElementById('ev-followup').value, 10) || 3,
-      badgeSource: badgeSource,
+      badgeSources: badgeSources.slice(),
       apiKey: document.getElementById('ev-key').value.trim(),
-      languages: document.getElementById('ev-lang').value.trim(),
+      languages: languages.slice(),
       retain: parseInt(document.getElementById('ev-retain').value, 10) || 30
     };
     save();
@@ -902,11 +991,30 @@
     toast('Event saved');
   };
 
+  var MODE_LABEL = { qr:'QR', card:'Card', manual:'Manual' };
   function paintEvent(){
     var e = state.event; if(!e) return;
     document.getElementById('scan-event').textContent = e.name.length > 22 ? e.name.slice(0,20)+'…' : e.name;
     document.getElementById('l-event').textContent = e.name + (e.stand ? ' · Stand ' + e.stand : '');
-    setMode(e.badgeSource === 'card' ? 'card' : 'badge');
+
+    // the API route still resolves a scanned badge, so it shares the QR mode
+    var modes = [];
+    if(e.badgeSources.indexOf('qr') > -1 || e.badgeSources.indexOf('api') > -1) modes.push('badge');
+    if(e.badgeSources.indexOf('card') > -1) modes.push('card');
+    if(e.badgeSources.indexOf('manual') > -1) modes.push('manual');
+    if(!modes.length) modes = ['badge'];
+
+    var seg = document.getElementById('mode-seg'); seg.innerHTML='';
+    modes.forEach(function(m){
+      var b = document.createElement('button');
+      b.type='button'; b.dataset.mode = m;
+      b.style.cssText = 'min-height:40px;padding:0 12px;font-size:12px;';
+      b.textContent = m === 'badge' ? 'QR' : MODE_LABEL[m];
+      b.addEventListener('click', function(ev){ ev.preventDefault(); setMode(m); });
+      seg.appendChild(b);
+    });
+    seg.style.display = modes.length > 1 ? 'flex' : 'none';
+    setMode(modes[0]);
   }
 
   /* =========================================================
@@ -921,9 +1029,12 @@
     Array.prototype.forEach.call(document.querySelectorAll('[data-mode]'), function(b){
       b.classList.toggle('on', b.dataset.mode === m);
     });
-    var hint = document.getElementById('scan-hint'), ret = document.getElementById('reticle');
-    if(m === 'badge'){ hint.textContent = 'Point at a QR code — any QR code will do'; ret.style.display=''; pill('looking · QR'); }
-    if(m === 'card'){ hint.textContent = 'Hold the card in the frame — it reads by itself'; ret.style.display=''; prevGray=null; ocrTries=0; if(scanning) prepareCardReader(); }
+    var hint = document.getElementById('scan-hint'), ret = document.getElementById('reticle'), guide = document.getElementById('cardguide');
+    ret.style.display = m === 'badge' ? '' : 'none';
+    guide.style.display = m === 'card' ? 'block' : 'none';
+    if(m === 'badge'){ hint.textContent = 'Point at a QR code — any QR code will do'; pill('looking · QR'); }
+    if(m === 'card'){ hint.textContent = 'Fill the dashed frame with the card — it reads by itself'; prevGray=null; ocrTries=0; if(scanning) prepareCardReader(); }
+    if(m === 'manual'){ hint.textContent = 'Tap the button and type their details in'; pill('manual'); }
   };
   function pill(t){ var el=document.getElementById('scan-status-text'); if(el) el.textContent = t; }
 
@@ -1062,10 +1173,16 @@
 
   window.manualCapture = function(){
     if(state.mode === 'badge'){ toast('Hold a QR code in the frame — or tap Sample'); return; }
-    var c = frameToCanvas();
-    if(!c){ toast('No camera picture to read — use Scan from a photo'); return; }
+    if(state.mode === 'manual'){
+      ocrFields = { name:'', company:'', email:'', title:'', phone:'', _conf:{} };
+      document.getElementById('card-img').removeAttribute('src');
+      showCard(ocrFields, null);
+      return;
+    }
+    var raw = cardCrop(document.getElementById('cam'));
+    if(!raw){ toast('No camera picture to read — use Scan from a photo'); return; }
     scanning = false;
-    readCard(c, c.toDataURL('image/jpeg', 0.7));
+    readCard(raw, raw.toDataURL('image/jpeg', 0.75));
   };
 
   /* ---------- adding a contact: the fast path ---------- */
@@ -1150,6 +1267,74 @@
     prevGray = gray;
     return { sharp:sharp, move:move };
   }
+  /* ---------- card capture: crop to the guide, then clean up for OCR ----------
+     Tesseract is far better on a high-contrast, cropped, upright image than on a
+     raw camera frame. This is what was making card reading feel broken. */
+  var ccv = document.createElement('canvas');   // raw crop (what the user sees)
+  var pcv = document.createElement('canvas');   // cleaned copy (what OCR sees)
+
+  function cardCrop(v){
+    if(!v || !v.videoWidth) return null;
+    var vw = v.videoWidth, vh = v.videoHeight;
+    var cw = vw * 0.9, ch = cw / 1.75;
+    if(ch > vh * 0.92){ ch = vh * 0.92; cw = ch * 1.75; }
+    var sx = (vw - cw) / 2, sy = (vh - ch) / 2;
+    var out = 1600, oh = Math.round(out / 1.75);
+    ccv.width = out; ccv.height = oh;
+    var ctx = ccv.getContext('2d', { willReadFrequently:true });
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(v, sx, sy, cw, ch, 0, 0, out, oh);
+    return ccv;
+  }
+
+  function cleanForOCR(src){
+    pcv.width = src.width; pcv.height = src.height;
+    var ctx = pcv.getContext('2d', { willReadFrequently:true });
+    ctx.drawImage(src, 0, 0);
+    var img = ctx.getImageData(0, 0, pcv.width, pcv.height), d = img.data;
+    var n = pcv.width * pcv.height, gray = new Uint8Array(n), hist = new Uint32Array(256), i, px, g;
+
+    for(i = 0; i < n; i++){
+      px = i * 4;
+      g = (d[px] * 0.299 + d[px+1] * 0.587 + d[px+2] * 0.114) | 0;
+      gray[i] = g; hist[g]++;
+    }
+    // stretch contrast between the 2nd and 98th percentile
+    var lo = 0, hi = 255, acc = 0, cut = n * 0.02;
+    for(i = 0; i < 256; i++){ acc += hist[i]; if(acc >= cut){ lo = i; break; } }
+    acc = 0;
+    for(i = 255; i >= 0; i--){ acc += hist[i]; if(acc >= cut){ hi = i; break; } }
+    var span = Math.max(1, hi - lo);
+    hist = new Uint32Array(256);
+    for(i = 0; i < n; i++){
+      g = Math.round((gray[i] - lo) * 255 / span);
+      g = g < 0 ? 0 : (g > 255 ? 255 : g);
+      gray[i] = g; hist[g]++;
+    }
+    // Otsu threshold
+    var total = n, sum = 0, sumB = 0, wB = 0, best = 0, thr = 128, wF, mB, mF, between;
+    for(i = 0; i < 256; i++) sum += i * hist[i];
+    for(i = 0; i < 256; i++){
+      wB += hist[i]; if(!wB) continue;
+      wF = total - wB; if(!wF) break;
+      sumB += i * hist[i];
+      mB = sumB / wB; mF = (sum - sumB) / wF;
+      between = wB * wF * (mB - mF) * (mB - mF);
+      if(between > best){ best = between; thr = i; }
+    }
+    var dark = 0;
+    for(i = 0; i < n; i++) if(gray[i] <= thr) dark++;
+    var invert = dark > n * 0.55;   // light text on a dark card
+    for(i = 0; i < n; i++){
+      px = i * 4;
+      var on = gray[i] > thr;
+      var v2 = (invert ? !on : on) ? 255 : 0;
+      d[px] = d[px+1] = d[px+2] = v2; d[px+3] = 255;
+    }
+    ctx.putImageData(img, 0, 0);
+    return pcv;
+  }
+
   function frameToCanvas(){
     var v = document.getElementById('cam');
     if(!v.videoWidth) return null;
@@ -1160,9 +1345,9 @@
   }
   function tryLiveCard(v){
     ocrBusy=true; ocrLastRun=Date.now(); pill('reading the card…');
-    var c = frameToCanvas(); if(!c){ ocrBusy=false; return; }
-    var thumb = c.toDataURL('image/jpeg',0.7);
-    ocrWorker.recognize(c).then(function(r){
+    var raw = cardCrop(v); if(!raw){ ocrBusy=false; return; }
+    var thumb = raw.toDataURL('image/jpeg',0.75);
+    ocrWorker.recognize(cleanForOCR(raw)).then(function(r){
       var lines = (r.data.lines||[]).map(function(l){
         return { t:(l.text||'').replace(/\s+/g,' ').trim(), c:Math.round(l.confidence||0), h:Math.round(l.bbox?l.bbox.y1-l.bbox.y0:10) };
       }).filter(function(l){ return l.t; });
@@ -1205,15 +1390,27 @@
     out._conf = conf;
     return out;
   }
+  function linesFrom(r){
+    return (r.data.lines||[]).map(function(l){
+      return { t:(l.text||'').replace(/\s+/g,' ').trim(), c:Math.round(l.confidence||0), h:Math.round(l.bbox?l.bbox.y1-l.bbox.y0:10) };
+    }).filter(function(l){ return l.t && l.t.replace(/[^A-Za-z0-9]/g,'').length > 1; });
+  }
   function readCard(src, thumb){
     veil(true,'Reading the card', ocrWorker ? 'A second or two.' : 'First card takes a few seconds.');
-    ensureOCR().then(function(w){ bar(0.55); return w.recognize(src); }).then(function(r){
-      bar(1);
-      var lines = (r.data.lines||[]).map(function(l){
-        return { t:(l.text||'').replace(/\s+/g,' ').trim(), c:Math.round(l.confidence||0), h:Math.round(l.bbox?l.bbox.y1-l.bbox.y0:10) };
-      }).filter(function(l){ return l.t; });
-      veil(false);
-      if(!lines.length){ toast('No text found — try again with more light'); go('s-scan'); startCamera(); return; }
+    var worker;
+    ensureOCR().then(function(w){ worker = w; bar(0.45); return w.recognize(cleanForOCR(src)); }).then(function(r){
+      var lines = linesFrom(r);
+      bar(0.8);
+      // the cleaned image usually wins, but on glossy or coloured cards the
+      // untouched photo sometimes reads better — try it before giving up
+      if(lines.length >= 2) return lines;
+      return worker.recognize(src).then(function(r2){
+        var raw = linesFrom(r2);
+        return raw.length > lines.length ? raw : lines;
+      });
+    }).then(function(lines){
+      bar(1); veil(false);
+      if(!lines || !lines.length){ toast('No text found — try again with more light'); go('s-scan'); startCamera(); return; }
       showCard(parseCard(lines), thumb);
     }).catch(function(err){
       veil(false);
@@ -1230,7 +1427,7 @@
     CARDF.forEach(function(d){
       var v=f[d.k], c=f._conf[d.k]||0, shaky = !v || c<80;
       var b = document.createElement('button'); b.type='button'; b.className = v ? 'field' : 'field blank';
-      if(v && shaky) b.style.cssText='border:1.5px solid rgba(255,176,32,.45);background:rgba(255,176,32,.06);border-radius:12px;padding:11px 14px;width:100%;text-align:left;display:flex;flex-direction:column;gap:4px;min-height:58px;';
+      if(v && shaky) b.style.cssText='border:1.5px solid rgba(254,179,6,.45);background:rgba(254,179,6,.06);border-radius:12px;padding:11px 14px;width:100%;text-align:left;display:flex;flex-direction:column;gap:4px;min-height:58px;';
       b.innerHTML = '<span class="flabel" style="'+(v&&shaky?'color:var(--warn)':'')+'">'+d.label+(v&&shaky?' · NOT SURE':'')+'</span>'+
         '<span style="display:flex;align-items:center;gap:8px;">'+
         (v?'<span class="fval" style="flex:1;">'+esc(v)+'</span>':'<span class="fval empty" style="flex:1;">Nothing readable — tap to add</span>')+
@@ -1261,7 +1458,7 @@
       cv.width=w; cv.height=h;
       var ctx = cv.getContext('2d',{willReadFrequently:true});
       ctx.drawImage(im,0,0,w,h); URL.revokeObjectURL(url);
-      if(state.mode==='card'){ scanning=false; readCard(cv, cv.toDataURL('image/jpeg',0.7)); return; }
+      if(state.mode==='card'){ scanning=false; readCard(cv, cv.toDataURL('image/jpeg',0.75)); return; }
       if(typeof jsQR !== 'function'){ toast('No QR reader available'); return; }
       var code = jsQR(ctx.getImageData(0,0,w,h).data, w, h, { inversionAttempts:'attemptBoth' });
       if(code && code.data){ scanning=false; addContact(parseBadge(code.data)); }
@@ -1313,7 +1510,7 @@
       d.className = 'chip' + (got ? ' done' : '');
       d.innerHTML = (got
         ? '<svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M4 10.5l4 4 8-9" stroke="#3DD68C" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-        : '<span style="width:12px;height:12px;border-radius:50%;border:1.5px solid #4A525E;display:block;"></span>') + '<span>'+esc(c.label)+'</span>';
+        : '<span style="width:12px;height:12px;border-radius:50%;border:1.5px solid #4E6A7C;display:block;"></span>') + '<span>'+esc(c.label)+'</span>';
       el.appendChild(d);
     });
   }
@@ -1527,7 +1724,7 @@
     var sum = document.createElement('button');
     sum.type='button'; sum.className='card';
     sum.style.cssText='margin-top:14px;padding:15px;width:100%;text-align:left;display:block;';
-    sum.innerHTML = '<div class="eyebrow" style="margin-bottom:8px;">SUMMARY</div><p style="margin:0;font-size:14.5px;line-height:1.6;color:#D5DAE1;">'+esc(co.summary || summarise(co, f))+'</p>';
+    sum.innerHTML = '<div class="eyebrow" style="margin-bottom:8px;">SUMMARY</div><p style="margin:0;font-size:14.5px;line-height:1.6;color:#D8E4EB;">'+esc(co.summary || summarise(co, f))+'</p>';
     onTap(sum, function(){
       openEdit('SUMMARY', co.summary || summarise(co, f), true, function(nv){ if(nv){ co.summary = nv; save(); setTab('meddic'); } });
     });
@@ -1656,14 +1853,14 @@
         row('Open support cases', sf.cases ? String(sf.cases) : 'none');
       if(sf.opps){
         var w = document.createElement('div');
-        w.style.cssText = 'margin-top:12px;padding:11px 12px;border-radius:10px;background:rgba(255,176,32,.09);border:1px solid rgba(255,176,32,.25);font-size:13px;line-height:1.5;color:var(--warn);';
+        w.style.cssText = 'margin-top:12px;padding:11px 12px;border-radius:10px;background:rgba(254,179,6,.09);border:1px solid rgba(254,179,6,.25);font-size:13px;line-height:1.5;color:var(--warn);';
         w.textContent = 'There is a live deal here. Talk to ' + sf.owner + ' before promising anything.';
         card.appendChild(w);
       }
     } else {
       card.innerHTML =
         '<div style="display:flex;align-items:center;gap:9px;margin-bottom:8px;">'+
-          '<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="#667080" stroke-width="1.4"/><path d="M10 6.5v4.2M10 13.4v.2" stroke="#667080" stroke-width="1.6" stroke-linecap="round"/></svg>'+
+          '<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="#6E8A9B" stroke-width="1.4"/><path d="M10 6.5v4.2M10 13.4v.2" stroke="#6E8A9B" stroke-width="1.6" stroke-linecap="round"/></svg>'+
           '<span style="font-size:15px;font-weight:600;">New to us</span>'+
         '</div>'+
         '<p style="margin:0;font-size:14px;line-height:1.55;color:var(--ink-2);">No account matches this domain. It will be created when you send the leads across.</p>';
@@ -1691,7 +1888,7 @@
     } else {
       var eb = document.createElement('button');
       eb.className = 'btn ghost';
-      eb.innerHTML = '<svg width="17" height="17" viewBox="0 0 20 20" fill="none" style="flex-shrink:0;"><circle cx="9" cy="9" r="6" stroke="#99A2AE" stroke-width="1.6"/><path d="M13.5 13.5L17 17" stroke="#99A2AE" stroke-width="1.6" stroke-linecap="round"/></svg> Enrich with Apollo';
+      eb.innerHTML = '<svg width="17" height="17" viewBox="0 0 20 20" fill="none" style="flex-shrink:0;"><circle cx="9" cy="9" r="6" stroke="#9DB3C0" stroke-width="1.6"/><path d="M13.5 13.5L17 17" stroke="#9DB3C0" stroke-width="1.6" stroke-linecap="round"/></svg> Enrich with Apollo';
       onTap(eb, function(){ enrich(co); });
       wrap.appendChild(eb);
       var eh = document.createElement('p');
@@ -1785,9 +1982,9 @@
             '<span style="font-size:14.5px;">'+esc(d.label.charAt(0)+d.label.slice(1).toLowerCase())+'</span>'+
             '<span class="dim" style="font-size:11.5px;">'+esc(d.meddic)+'</span>'+
           '</span>'+
-          '<span style="width:44px;height:26px;border-radius:13px;background:'+(on?'var(--accent)':'#2C333E')+
+          '<span style="width:44px;height:26px;border-radius:13px;background:'+(on?'var(--accent)':'#14526E')+
             ';display:flex;align-items:center;justify-content:'+(on?'flex-end':'flex-start')+';padding:3px;flex-shrink:0;box-sizing:border-box;">'+
-            '<span style="width:20px;height:20px;border-radius:50%;background:'+(on?'#0E1116':'#667080')+';display:block;"></span></span>';
+            '<span style="width:20px;height:20px;border-radius:50%;background:'+(on?'#011E2E':'#6E8A9B')+';display:block;"></span></span>';
         onTap(r, function(){ ruleOn[d.k] = !ruleOn[d.k]; saveRules(); renderRules(); });
         box.appendChild(r);
       });
@@ -1954,7 +2151,22 @@
     toast('Deleted — nothing kept');
   };
 
+  /* ---------- brand ----------
+     Placeholder mark. Swap LOGO_SVG for iProov's real logo and every screen
+     that shows it updates — it is referenced in one place on purpose. */
+  /* iProov's own logo, knocked out to sit on the navy ground: the mark keeps
+     brand orange and amber, the wordmark is lightened. One place to change. */
+  var LOGO_SRC = 'data:image/png;base64,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';
+
+  function paintBrand(){
+    Array.prototype.forEach.call(document.querySelectorAll('[data-logo]'), function(el){
+      var h = el.getAttribute('data-logo') || '30';
+      el.innerHTML = '<img src="' + LOGO_SRC + '" alt="iProov" style="height:' + h + 'px;width:auto;display:block;">';
+    });
+  }
+
   /* ---------- boot ---------- */
+  paintBrand();
   loadRules();
   load();
   buildWave();
