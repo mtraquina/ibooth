@@ -1321,8 +1321,12 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     if(saved){
       txt.textContent = saved.siteBrief;
       txt.style.color = 'var(--ink-2)';
-      why.style.display = saved.siteWhy ? 'flex' : 'none';
-      whyTxt.textContent = saved.siteWhy || '';
+      /* a brief from an older build, or a retry that failed, has no iProov
+         half — say so here rather than letting it go missing in the PDF */
+      why.style.display = 'flex';
+      whyTxt.textContent = saved.siteWhy ||
+        'Not written yet — this brief was made before this section existed. Research it again to add it.';
+      whyTxt.style.color = saved.siteWhy ? 'var(--ink-2)' : 'var(--warn)';
       when.textContent = (saved.siteBriefAt ? dayLabel(saved.siteBriefAt) : '') +
         (saved.siteHow ? ' · ' + saved.siteHow : '');
       go.textContent = 'Research it again';
@@ -2962,16 +2966,22 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       'lists and past-year write-ups say about it, and prefer those for anything about size, audience',
       'and substance.',
       '',
-      'Return ONE JSON object and nothing else. No markdown, no commentary:',
-      '{',
-      '  "about": "4 to 6 sentences of plain prose: what the event is, who actually attends and at what',
-      '           seniority, roughly how big, where and when, and the themes that dominate the agenda.",',
-      '  "relevance": "3 to 5 sentences on why this event matters to iProov specifically: which of the',
-      '               buyers above are in the room, which sessions or themes touch identity, fraud,',
-      '               onboarding or account takeover, and any competitors or adjacent vendors known to',
-      '               exhibit. Be concrete and be willing to say it is a weak fit if that is what the',
-      '               evidence shows — a candid no is more useful than a polite yes."',
-      '}',
+      'Write BOTH sections below. Reply with exactly this shape and nothing else —',
+      'the two markers on their own lines, plain prose beneath each, no markdown, no bullets:',
+      '',
+      '===ABOUT===',
+      '4 to 6 sentences: what the event is, who actually attends and at what seniority,',
+      'roughly how big it is, where and when, and the themes that dominate the agenda.',
+      '',
+      '===IPROOV===',
+      '3 to 5 sentences on why this event matters to iProov specifically: which of the buyers',
+      'above are in the room, which sessions or themes touch identity, fraud, onboarding or',
+      'account takeover, and any competitors or adjacent vendors known to exhibit. Be concrete,',
+      'and be willing to say it is a weak fit if that is what the evidence shows — a candid no',
+      'is more useful to a sales team than a polite yes.',
+      '',
+      'The ===IPROOV=== section is REQUIRED and must never be left out, even if the research is',
+      'thin; in that case say what little can be judged and why the rest is unknown.',
       '',
       'Rules. Ground every claim in what you actually found; if the record is thin, say so plainly',
       'rather than padding. Never invent attendance figures, exhibitor names or session titles.',
@@ -2988,12 +2998,26 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
                     siteHost(url), 1400,
                     function(a, n){ txt.textContent = n === 1 ? 'Researching ' + e.name + '…' : 'Trying another route…'; })
       .then(function(res){
-        var parsed = parseBriefJson(res.text);
+        var parsed = parseBrief(res.text);
         e.siteBrief = parsed.about; e.siteWhy = parsed.relevance;
         e.siteUrl = url; e.siteBriefAt = Date.now();
         e.siteHow = res.attempt.label + ' with ' + shortModel(res.attempt.model);
         save(); paintBrief();
-        toast('Brief written — ' + res.attempt.label);
+
+        /* The iProov half is the half that gets skipped when a model decides
+           to answer in its own shape. Rather than quietly ship a report
+           missing its point, ask again for that section alone. */
+        if(parsed.relevance) { toast('Brief written — ' + res.attempt.label); return; }
+        txt.textContent = parsed.about;
+        document.getElementById('ev-why').style.display = 'flex';
+        document.getElementById('ev-why-text').textContent = 'Working out the iProov angle…';
+        return relevanceOnly(e, parsed.about).then(function(why){
+          e.siteWhy = why; save(); paintBrief();
+          toast('Brief written — ' + res.attempt.label);
+        }).catch(function(){
+          e.siteWhy = ''; save(); paintBrief();
+          toast('Brief written, but the iProov section did not come back');
+        });
       })
       .catch(function(err){
         var m = String(err.message || err), s = err.status;
@@ -3010,21 +3034,75 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       });
   };
 
-  /* The model is asked for JSON, but a stray sentence before the brace is a
-     familiar failure. Take the object if there is one, and fall back to
-     treating the whole reply as the description rather than losing it. */
-  function parseBriefJson(raw){
-    var t = String(raw).trim().replace(/^```(?:json)?/i,'').replace(/```$/,'').trim();
-    var start = t.indexOf('{'), end = t.lastIndexOf('}');
-    if(start > -1 && end > start){
+  /* Models answer in their own shape more often than anyone would like, so
+     read the reply four ways before giving up on the second section:
+     the markers asked for, a markdown heading, JSON from an earlier build,
+     or — last resort — a blank line between two paragraphs. */
+  function parseBrief(raw){
+    var t = String(raw).trim().replace(/^```(?:json|text|markdown)?/i,'').replace(/```$/,'').trim();
+
+    // 1. JSON, as an earlier build asked for — checked first, because a JSON
+    //    body contains the word "about" and would fool the marker match
+    if(t.charAt(0) === '{'){
       try{
-        var j = JSON.parse(t.slice(start, end + 1));
-        var about = String(j.about || '').trim(),
-            why   = String(j.relevance || j.why || '').trim();
-        if(about || why) return { about: about || t, relevance: why };
+        var j = JSON.parse(t);
+        var a = String(j.about || '').trim(), w = String(j.relevance || j.why || j.iproov || '').trim();
+        if(a || w) return { about: a || t, relevance: w };
       }catch(err){}
     }
-    return { about: t, relevance: '' };
+
+    // 2. the markers this prompt asks for, at the start of a line,
+    //    however the model chose to punctuate them
+    var m = t.match(/(?:^|\n)[\s=*#>-]*ABOUT[^\n]*\n([\s\S]*?)(?:\n)[\s=*#>-]*(?:IPROOV|I ?PROOV|RELEVANCE|WHY)[^\n]*\n([\s\S]*)$/i);
+    if(m && m[1].trim() && m[2].trim()) return { about: clean(m[1]), relevance: clean(m[2]) };
+
+    // 3. anything that reads as a heading for the second half
+    var h = t.match(/^([\s\S]*?)(?:\n)[\s=*#>-]*(?:why it matters[^\n]*|relevance|iproov(?: relevance)?)\s*[:\-–—]?[\s*=#]*\n([\s\S]*)$/i);
+    if(h && h[1].trim() && h[2].trim()) return { about: clean(h[1]), relevance: clean(h[2]) };
+
+    // 4. two paragraphs, the second of which talks about us
+    var paras = t.split(/\n\s*\n/).map(function(x){ return x.trim(); }).filter(Boolean);
+    if(paras.length >= 2){
+      var idx = -1;
+      paras.forEach(function(pp, i){ if(idx < 0 && i > 0 && /iproov/i.test(pp)) idx = i; });
+      if(idx > 0) return {
+        about: clean(paras.slice(0, idx).join('\n\n')),
+        relevance: clean(paras.slice(idx).join('\n\n'))
+      };
+    }
+    return { about: clean(t), relevance: '' };
+  }
+
+  /* strip whatever decoration the model wrapped the section in */
+  function clean(x){
+    var v = String(x).trim();
+    v = v.replace(/^[\s=*#>_-]+/, '').replace(/[\s=*#_]+$/, '');
+    v = v.replace(/^(?:about(?:\s+the\s+event|\s+this\s+event)?|why\s+it\s+matters(?:\s+to\s+iproov)?|relevance(?:\s+to\s+iproov)?|iproov(?:\s+relevance)?)\s*[:\-–—]*[\s*_]*/i, '');
+    return v.trim();
+  }
+
+  /* Second chance at the section that matters most. No tools — the research
+     has already happened, this is judgement applied to it. */
+  function relevanceOnly(e, about){
+    var system = [
+      'iProov sells face biometric verification: liveness detection, injection-attack detection,',
+      'remote onboarding and account recovery. Its buyers are banks, governments, telcos and other',
+      'regulated organisations that must prove a remote person is real and present.',
+      '',
+      'Given the description of an event, write 3 to 5 sentences on why it matters to iProov:',
+      'which of those buyers are in the room, which themes touch identity, fraud, onboarding or',
+      'account takeover, and any competitors likely to exhibit. Be concrete, and say plainly if it',
+      'is a weak fit — a candid no is more useful to a sales team than a polite yes.',
+      '',
+      'Use only what the description supports. Do not invent figures, exhibitors or sessions.',
+      'Plain prose only: no headings, no bullets, no preamble.'
+    ].join('\n');
+    return claudeCall(system, 'Event: ' + e.name + '\n\n' + about, 600)
+      .then(function(t){
+        var out = clean(t);
+        if(!out) throw new Error('empty');
+        return out;
+      });
   }
 
   function shortModel(m){
