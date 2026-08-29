@@ -32,12 +32,17 @@ Notes
 * Every field is editable — tap any line to correct it. Your version is
   kept and marked YOURS; a later note never overwrites it.
 * NO API KEY SHIPS IN THIS BUILD. The repo can safely be public.
-* Claude reads the notes by default, but only once you point it at a
-  proxy: Rules > How the note gets read > Proxy address. Until then it
-  quietly falls back to reading notes on the phone.
-* Deploy the proxy from the ibooth-claude-proxy folder — a small
-  Cloudflare Worker that holds the key server-side. Then paste its
-  address in, or send it to me and I'll bake it into the build.
+* Claude reads the notes by default, but each phone needs its own key:
+  Rules > How the note gets read > Your Anthropic key. Paste it once.
+  It is kept in that phone's browser storage, greyed out afterwards and
+  never shown again. "Forget it" wipes it from the phone.
+  Until a key is pasted the app quietly reads notes on the phone with
+  keyword matching instead, and marks each note so you can tell.
+* The key is per phone AND per browser. Clearing browsing data, a
+  private tab, or a different browser all mean pasting it again.
+* Anyone holding that key can spend against your Anthropic account, so
+  keep the spend limit on and delete the key in the Claude Console the
+  moment a phone goes missing or somebody leaves.
 * Only the note TEXT is sent, never the audio.
 * Sign-in, Salesforce and Apollo are still mocked.
 
