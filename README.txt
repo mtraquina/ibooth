@@ -31,17 +31,14 @@ Notes
   and which languages transcription expects. Both are multi-select.
 * Every field is editable — tap any line to correct it. Your version is
   kept and marked YOURS; a later note never overwrites it.
-* Claude reads the notes BY DEFAULT. The transcript text — not the
-  audio — is sent to Anthropic's API. Switch to "On the phone" under
-  Rules > How the note gets read to keep everything local.
-
-  !! THE API KEY IS EMBEDDED IN index.html !!
-  Anyone who opens this site can read it. Before publishing:
-    - if the GitHub repo is public, the key is public too
-    - set a spend limit on the key at console.anthropic.com
-    - rotate the key when testing is finished
-  A real build must call Claude from a small server-side proxy so the
-  key never reaches the phone at all.
+* NO API KEY SHIPS IN THIS BUILD. The repo can safely be public.
+* Claude reads the notes by default, but only once you point it at a
+  proxy: Rules > How the note gets read > Proxy address. Until then it
+  quietly falls back to reading notes on the phone.
+* Deploy the proxy from the ibooth-claude-proxy folder — a small
+  Cloudflare Worker that holds the key server-side. Then paste its
+  address in, or send it to me and I'll bake it into the build.
+* Only the note TEXT is sent, never the audio.
 * Sign-in, Salesforce and Apollo are still mocked.
 
 Brand
