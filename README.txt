@@ -31,12 +31,17 @@ Notes
   and which languages transcription expects. Both are multi-select.
 * Every field is editable — tap any line to correct it. Your version is
   kept and marked YOURS; a later note never overwrites it.
-* Nothing leaves the device UNLESS you switch the note reader to Claude
-  (Rules > How the note gets read). Then the transcript text — not the
-  audio — is sent to Anthropic's API with the key you paste in.
-* That key is held in the browser, so treat it as a testing convenience.
-  A built app must call Claude from a server so the key never reaches
-  the phone.
+* Claude reads the notes BY DEFAULT. The transcript text — not the
+  audio — is sent to Anthropic's API. Switch to "On the phone" under
+  Rules > How the note gets read to keep everything local.
+
+  !! THE API KEY IS EMBEDDED IN index.html !!
+  Anyone who opens this site can read it. Before publishing:
+    - if the GitHub repo is public, the key is public too
+    - set a spend limit on the key at console.anthropic.com
+    - rotate the key when testing is finished
+  A real build must call Claude from a small server-side proxy so the
+  key never reaches the phone at all.
 * Sign-in, Salesforce and Apollo are still mocked.
 
 Brand

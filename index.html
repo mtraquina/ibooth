@@ -641,22 +641,25 @@
       <div class="col" style="gap:9px;">
         <span class="eyebrow">HOW THE NOTE GETS READ</span>
         <div class="seg" id="ai-seg" style="flex-shrink:0;">
-          <button type="button" data-ai="off" class="on">On the phone</button>
-          <button type="button" data-ai="on">Ask Claude</button>
+          <button type="button" data-ai="off">On the phone</button>
+          <button type="button" data-ai="on" class="on">Ask Claude</button>
         </div>
         <p class="dim" id="ai-hint" style="font-size:12.5px;line-height:1.5;margin:2px 0 0;">Keyword matching. Instant and works with no signal, but it can only quote sentences back at you.</p>
 
         <div id="ai-wrap" style="display:none;flex-direction:column;gap:10px;margin-top:4px;">
           <div class="fld">
-            <label for="ai-key">ANTHROPIC API KEY</label>
-            <input id="ai-key" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
-            <span class="hint">Kept on this phone only. Roughly £0.002 a note.</span>
+            <label for="ai-key" id="ai-key-label">KEY SUPPLIED WITH THIS BUILD</label>
+            <input id="ai-key" type="text" readonly autocomplete="off" spellcheck="false" class="mono" style="opacity:.55;">
+            <div class="row" style="justify-content:space-between;gap:10px;">
+              <span class="hint" style="flex:1;">Roughly £0.002 a note.</span>
+              <button type="button" id="ai-swap" onclick="swapKeySource()" style="font-size:12.5px;color:var(--accent);text-decoration:underline;text-underline-offset:3px;min-height:36px;">Use my own key instead</button>
+            </div>
           </div>
           <div style="display:flex;align-items:flex-start;gap:11px;border:1px solid rgba(254,179,6,.3);background:rgba(254,179,6,.07);border-radius:14px;padding:14px;">
             <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style="flex-shrink:0;margin-top:1px;"><path d="M10 3.2l7.2 12.4H2.8L10 3.2z" stroke="#FEB306" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 8v3.4" stroke="#FEB306" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="13.4" r=".9" fill="#FEB306"/></svg>
             <div class="col" style="gap:3px;flex:1;">
-              <span style="font-size:13.5px;font-weight:600;color:var(--warn);">Prototype shortcut</span>
-              <span class="muted" style="font-size:12.5px;line-height:1.5;">The key sits in this browser, so anyone holding the phone could read it. Fine for testing with your own key; a built app must call Claude from a server instead.</span>
+              <span style="font-size:13.5px;font-weight:600;color:var(--warn);">This key is not secret</span>
+              <span class="muted" style="font-size:12.5px;line-height:1.5;">It ships inside this page, so anyone who opens the site can read it. Fine while you are testing — rotate it afterwards, cap the spend, and have a real build call Claude from a server so the key never reaches the phone.</span>
             </div>
           </div>
           <button class="btn ghost sm" onclick="testClaude()" id="ai-test" style="flex-shrink:0;">Test the key</button>
@@ -2347,15 +2350,36 @@
      actually said — the same "blank beats a guess" rule, enforced in the
      prompt rather than by regex.
      ========================================================= */
-  var ai = { on:false, key:'', model:'claude-haiku-4-5-20251001' };
+  /* A key is shipped with this build so the prototype works out of the box.
+     It is readable by anyone who opens this page — rotate it when testing
+     is done, and have a real build call Claude from a server instead. */
+  var BUILT_IN_KEY = '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';
+
+  var ai = { on:true, key:BUILT_IN_KEY, own:false, model:'claude-haiku-4-5-20251001' };
 
   function loadAI(){
     try{
       var r = JSON.parse(localStorage.getItem('booth.ai'));
-      if(r){ ai.on = !!r.on; ai.key = r.key || ''; ai.model = r.model || ai.model; }
+      if(r){
+        if(typeof r.on === 'boolean') ai.on = r.on;
+        ai.own = !!r.own;
+        ai.key = (ai.own && r.key) ? r.key : BUILT_IN_KEY;
+        ai.model = r.model || ai.model;
+      }
     }catch(e){}
   }
-  function saveAI(){ try{ localStorage.setItem('booth.ai', JSON.stringify(ai)); }catch(e){} }
+  function maskKey(k){
+    if(!k) return '';
+    return k.slice(0, 14) + '\u2026' + k.slice(-4);
+  }
+  function saveAI(){
+    try{
+      localStorage.setItem('booth.ai', JSON.stringify({
+        on: ai.on, own: ai.own, model: ai.model,
+        key: ai.own ? ai.key : ''          // never persist a copy of the shipped key
+      }));
+    }catch(e){}
+  }
 
   function paintAI(){
     Array.prototype.forEach.call(document.querySelectorAll('#ai-seg button'), function(b){
@@ -2365,8 +2389,36 @@
     document.getElementById('ai-hint').textContent = ai.on
       ? 'Claude reads the note, tidies the wording and fills MEDDIC properly. Needs signal — without it, the phone falls back to keywords.'
       : 'Keyword matching. Instant and works with no signal, but it can only quote sentences back at you.';
-    document.getElementById('ai-key').value = ai.key;
+
+    var f = document.getElementById('ai-key');
+    var lbl = document.getElementById('ai-key-label');
+    var swap = document.getElementById('ai-swap');
+    if(ai.own){
+      f.type = 'password';
+      f.value = ai.key === BUILT_IN_KEY ? '' : ai.key;
+      f.readOnly = false;
+      f.style.opacity = '1';
+      f.style.color = 'var(--ink)';
+      f.placeholder = 'sk-ant-...';
+      lbl.textContent = 'YOUR ANTHROPIC KEY';
+      swap.textContent = 'Use the key that came with this build';
+    } else {
+      f.type = 'text';
+      f.value = maskKey(BUILT_IN_KEY);
+      f.readOnly = true;
+      f.style.opacity = '.55';
+      f.style.color = 'var(--ink-3)';
+      lbl.textContent = 'KEY SUPPLIED WITH THIS BUILD';
+      swap.textContent = 'Use my own key instead';
+    }
   }
+
+  window.swapKeySource = function(){
+    ai.own = !ai.own;
+    if(!ai.own) ai.key = BUILT_IN_KEY;
+    else ai.key = '';
+    saveAI(); paintAI();
+  };
 
   function aiReady(){ return ai.on && ai.key && ai.key.length > 20; }
 
@@ -2401,7 +2453,8 @@
 
   window.testClaude = function(){
     var btn = document.getElementById('ai-test');
-    ai.key = document.getElementById('ai-key').value.trim(); saveAI();
+    if(ai.own) ai.key = document.getElementById('ai-key').value.trim();
+    saveAI();
     if(!aiReady()){ toast('Paste a key first'); return; }
     btn.textContent = 'Testing…'; btn.disabled = true;
     claudeCall('Reply with the single word: ready', 'ping', 16)
@@ -2460,6 +2513,7 @@
     });
   });
   document.getElementById('ai-key').addEventListener('change', function(){
+    if(!ai.own) return;
     ai.key = this.value.trim(); saveAI();
   });
 
