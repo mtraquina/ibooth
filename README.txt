@@ -22,6 +22,11 @@ Notes
   access on a secure address.
 * The ocr/ folder is about 11 MB and downloads only the first time
   somebody reads a business card. Don't rename or move it.
+* IF CARD READING SAYS IT CANNOT START: you almost certainly uploaded
+  index.html without the ocr/ folder. The app now tells you which it is
+  — the panel in the viewfinder names the exact cause. As a safety net
+  it falls back to fetching the reader from the internet, so it will
+  still work on a phone with signal, just slower on the first card.
 * The event setup page decides which capture methods the scanner offers
   and which languages transcription expects. Both are multi-select.
 * Every field is editable — tap any line to correct it. Your version is

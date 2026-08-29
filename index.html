@@ -336,8 +336,9 @@
       <div style="height:28px;"></div>
     </div>
 
-    <div class="pad safe-b" style="padding-top:12px;border-top:1px solid var(--line);">
+    <div class="pad safe-b col" style="padding-top:12px;gap:10px;border-top:1px solid var(--line);">
       <button class="btn" id="ev-save" onclick="saveEvent()">Save and start scanning</button>
+      <button class="btn ghost" id="ev-delete" onclick="confirmDeleteEvent()" style="display:none;color:#F2696E;border-color:rgba(242,105,110,.35);">Delete this event</button>
     </div>
   </section>
 
@@ -1127,6 +1128,7 @@
     document.getElementById('ev-heading').textContent = editing ? 'Event settings' : 'Set up the event';
     document.getElementById('ev-back').style.display = state.events.length ? 'flex' : 'none';
     document.getElementById('ev-save').textContent = editing ? 'Save changes' : 'Save and start scanning';
+    document.getElementById('ev-delete').style.display = editing ? 'flex' : 'none';
     var d = new Date(), iso = function(x){ return x.toISOString().slice(0,10); };
     document.getElementById('ev-name').value = e ? e.name : '';
     document.getElementById('ev-venue').value = e ? e.venue : '';
@@ -1433,21 +1435,80 @@
       document.head.appendChild(el);
     });
   }
+  var CDN = 'https://cdn.jsdelivr.net/npm/';
+  var ocrSource = '', ocrError = '';
+
+  function haveLocalOCR(){
+    if(!window.fetch) return Promise.resolve(false);
+    return fetch('ocr/tesseract.min.js', { method:'HEAD' })
+      .then(function(r){ return !!r.ok; })
+      .catch(function(){ return false; });
+  }
+
   function ensureOCR(){
     if(ocrWorker) return Promise.resolve(ocrWorker);
-    return loadScript('ocr/tesseract.min.js').then(function(){
-      return Tesseract.createWorker('eng', 1, {
-        workerPath:'ocr/worker.min.js', corePath:'ocr/', langPath:'ocr/', cacheMethod:'none',
-        logger:function(m){ if(m.progress != null) bar(m.progress*0.5); }
+    return haveLocalOCR().then(function(local){
+      ocrSource = local ? 'bundled' : 'cdn';
+      var lib = local ? 'ocr/tesseract.min.js' : CDN + 'tesseract.js@5.1.1/dist/tesseract.min.js';
+      return loadScript(lib).then(function(){
+        var opts = { cacheMethod:'none', logger:function(m){ if(m.progress != null) bar(m.progress*0.5); } };
+        if(local){
+          opts.workerPath = 'ocr/worker.min.js';
+          opts.corePath   = 'ocr/';
+          opts.langPath   = 'ocr/';
+        } else {
+          // let tesseract.js reach its own hosted engine and language data
+          opts.workerPath = CDN + 'tesseract.js@5.1.1/dist/worker.min.js';
+          opts.corePath   = CDN + 'tesseract.js-core@5.1.1/';
+        }
+        return Tesseract.createWorker('eng', 1, opts);
       });
-    }).then(function(w){ ocrWorker = w; return w; });
+    }).then(function(w){ ocrWorker = w; return w; })
+      .catch(function(err){
+        ocrError = (err && (err.name || '') + (err.message ? ' — ' + err.message : '')) || 'unknown';
+        throw err;
+      });
+  }
+
+  function ocrDiagnose(){
+    var lines = [
+      ['Secure connection (https)', window.isSecureContext ? 'yes' : 'NO — required'],
+      ['Reader files bundled here', ocrSource === 'bundled' ? 'yes' : 'NO — the ocr/ folder is missing'],
+      ['Fell back to the internet', ocrSource === 'cdn' ? 'yes' : 'no'],
+      ['Web workers', (typeof Worker === 'function') ? 'yes' : 'NO'],
+      ['WebAssembly', (typeof WebAssembly === 'object') ? 'yes' : 'NO'],
+      ['OffscreenCanvas', (typeof OffscreenCanvas === 'function') ? 'yes' : 'no (not required)']
+    ];
+    if(ocrError) lines.push(['Error', ocrError]);
+    var why, fix;
+    if(!window.isSecureContext){ why = 'The page is not on https.'; fix = 'Open the hosted address rather than a local file.'; }
+    else if(ocrSource !== 'bundled'){
+      why = 'The ocr/ folder is not on your site, so the reader had to come from the internet — and that failed too.';
+      fix = 'Upload the whole booth-site folder to GitHub, not just index.html. The ocr/ folder must sit next to index.html.';
+    } else {
+      why = 'The reader is present but the browser refused to start it.';
+      fix = 'Reload the page. If it keeps happening, tell me the error line above.';
+    }
+    document.getElementById('diag-why').textContent = why;
+    document.getElementById('diag-fix').textContent = fix;
+    document.getElementById('diag-list').innerHTML = lines.map(function(l){
+      var bad = /^NO|Error/.test(l[1]);
+      return '<div><span style="color:var(--ink-3)">'+esc(l[0])+'</span> · <span style="color:'+(bad?'var(--warn)':'var(--good)')+'">'+esc(l[1])+'</span></div>';
+    }).join('');
+    var d = document.getElementById('diag');
+    d.querySelector('div').textContent = 'Card reading could not start';
+    d.style.display = 'block';
   }
   window.prepareCardReader = function(){
     if(ocrReady || ocrBusy) return;
     pill('loading the reader…'); ocrBusy = true;
-    ensureOCR().then(function(){ ocrReady=true; ocrBusy=false; ocrTries=0; pill('looking · card'); })
-      .catch(function(){ ocrBusy=false; pill('reader unavailable');
-        document.getElementById('scan-hint').textContent = 'Card reading needs the hosted version — QR still works.'; });
+    ensureOCR().then(function(){
+      ocrReady = true; ocrBusy = false; ocrTries = 0;
+      pill('looking · card' + (ocrSource === 'cdn' ? ' (from the internet)' : ''));
+    }).catch(function(){
+      ocrBusy = false; pill('reader unavailable');
+      ocrDiagnose();
+    });
   };
   function frameStats(v){
     var w=96,h=72; gcv.width=w; gcv.height=h;
@@ -1608,10 +1669,10 @@
       bar(1); veil(false);
       if(!lines || !lines.length){ toast('No text found — try again with more light'); go('s-scan'); startCamera(); return; }
       showCard(parseCard(lines), thumb);
-    }).catch(function(err){
+    }).catch(function(){
       veil(false);
-      toast(/could not load|Failed to fetch|404/i.test(err.message||'') ? 'Card reading needs the hosted version' : 'Card reading failed');
       go('s-scan'); startCamera();
+      ocrDiagnose();
     });
   }
   var CARDF = [ {k:'name',label:'NAME'},{k:'company',label:'COMPANY'},{k:'email',label:'EMAIL'},{k:'title',label:'TITLE'},{k:'phone',label:'PHONE'} ];
@@ -2327,18 +2388,56 @@
     toast(n + (n===1?' company':' companies') + ' sent — in the real app, anyway');
   };
 
+  var delTarget = null;
+
+  window.confirmDeleteEvent = function(){
+    var e = activeEvent(); if(!e) return;
+    var people = state.contacts.filter(function(c){ return c.eventId === e.id; }).length;
+    var cos = state.companies.filter(function(c){ return c.eventId === e.id; }).length;
+    delTarget = { kind:'event', id:e.id };
+    document.getElementById('del-name').textContent = e.name;
+    document.getElementById('del-sub').textContent = people
+      ? 'The event and everything captured at it — ' + people + (people===1?' person':' people') + ' across ' +
+        cos + (cos===1?' company':' companies') + ', their notes and MEDDIC — go for good.'
+      : 'Nothing has been captured at this event yet, so only the settings go.';
+    document.getElementById('del-veil').style.display='block';
+  };
+
   window.confirmDelete = function(){
     var co = companyById(viewingId); if(!co) return;
+    delTarget = { kind:'company', id:co.id };
     var people = contactsOf(co.id).length;
     document.getElementById('del-name').textContent = co.name;
     document.getElementById('del-sub').textContent =
       people + (people===1?' person':' people') + ', their notes and everything pulled out of them go for good. This is the path a deletion request would take.';
     document.getElementById('del-veil').style.display='block';
   };
-  window.cancelDelete = function(){ document.getElementById('del-veil').style.display='none'; };
+  window.cancelDelete = function(){ document.getElementById('del-veil').style.display='none'; delTarget = null; };
+
   window.doDelete = function(){
-    var co = companyById(viewingId);
     document.getElementById('del-veil').style.display='none';
+    var t = delTarget; delTarget = null;
+    if(!t) return;
+
+    if(t.kind === 'event'){
+      var name = '';
+      state.events.forEach(function(e){ if(e.id === t.id) name = e.name; });
+      state.contacts  = state.contacts.filter(function(c){ return c.eventId !== t.id; });
+      state.notes     = state.notes.filter(function(n){ return n.eventId !== t.id; });
+      state.companies = state.companies.filter(function(c){ return c.eventId !== t.id; });
+      state.events    = state.events.filter(function(e){ return e.id !== t.id; });
+      lastCompanyId = null; window.lastCompanyId = null;
+      viewingId = null; window.viewingId = null;
+      editingId = null;
+      state.activeId = state.events.length ? state.events[0].id : null;
+      save();
+      if(state.activeId) paintEvent();
+      renderEvents(); go('s-events');
+      toast(esc(name) + ' deleted');
+      return;
+    }
+
+    var co = companyById(t.id);
     if(!co) return;
     state.contacts = state.contacts.filter(function(c){ return c.companyId !== co.id; });
     state.notes = state.notes.filter(function(n){ return n.companyId !== co.id; });
