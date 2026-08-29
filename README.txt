@@ -14,6 +14,8 @@ Contents
 --------
   index.html   the app
   ocr/         the offline text-recognition engine used for business cards
+  zxing/       the barcode engine — QR, Code 128, PDF417, Data Matrix, Aztec
+  pdf/         the PDF writer, used only when you export a summary
   .nojekyll    stops GitHub Pages processing the folder. Keep it.
 
 Notes
@@ -22,11 +24,28 @@ Notes
   access on a secure address.
 * The ocr/ folder is about 11 MB and downloads only the first time
   somebody reads a business card. Don't rename or move it.
+* The zxing/ folder is about 1 MB and downloads the first time the
+  scanner opens. Without it the app still reads square QR codes, but
+  nothing else — the status pill in the viewfinder says which engine
+  is running, so you can tell at a glance.
+* iPhones have no barcode reader of their own, which is why this is
+  bundled. Android phones use Chrome's built-in one and don't need it.
 * IF CARD READING SAYS IT CANNOT START: you almost certainly uploaded
   index.html without the ocr/ folder. The app now tells you which it is
   — the panel in the viewfinder names the exact cause. As a safety net
   it falls back to fetching the reader from the internet, so it will
   still work on a phone with signal, just slower on the first card.
+* EVENT WEBSITE is checked for shape only — no request is made to see if
+  the address exists. With a Claude key, "Read the site" fetches the page
+  and writes a short brief on the show; the fetch happens on Anthropic's
+  servers, because a browser is not allowed to read another site's HTML.
+  It uses claude-sonnet-5 for that one call; notes still use Haiku.
+* EXECUTIVE SUMMARY: the document icon under the bin on the events list
+  builds a PDF at any time, for any event, including finished ones.
+  Hot companies first, names and job titles only, no emails, no phones,
+  no raw transcripts — so it can be forwarded without becoming a
+  mailing list. With a Claude key the opening read is written from the
+  notes; without one it is counted on the phone and says so.
 * The event setup page decides which capture methods the scanner offers
   and which languages transcription expects. Both are multi-select.
 * Every field is editable — tap any line to correct it. Your version is
