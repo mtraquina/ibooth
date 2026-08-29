@@ -289,6 +289,14 @@
           <div class="fld"><label for="ev-start">STARTS</label><input id="ev-start" type="date"></div>
           <div class="fld"><label for="ev-end">ENDS</label><input id="ev-end" type="date"></div>
         </div>
+        <div class="fld">
+          <label>REGION</label>
+          <div class="seg" id="ev-region">
+            <button type="button" data-region="Americas">Americas</button>
+            <button type="button" data-region="EMEA" class="on">EMEA</button>
+            <button type="button" data-region="APAC">APAC</button>
+          </div>
+        </div>
 
         <div style="height:1px;background:var(--line);margin:4px 0;"></div>
         <span class="eyebrow">WHERE THE LEADS GO</span>
@@ -503,7 +511,7 @@
       <div class="card steps" id="steps">
         <div class="step"><span class="dot" id="st0"></span><div class="col" style="gap:2px;"><span style="font-size:14.5px;font-weight:500;">Saved on this phone</span><span class="dim" style="font-size:12.5px;line-height:1.4;">Survives the app closing</span></div></div>
         <div class="step"><span class="dot" id="st1"></span><div class="col" style="gap:2px;"><span style="font-size:14.5px;font-weight:500;">Turning it into text</span><span class="dim" style="font-size:12.5px;line-height:1.4;">No signal needed</span></div></div>
-        <div class="step"><span class="dot" id="st2"></span><div class="col" style="gap:2px;"><span style="font-size:14.5px;font-weight:500;">Filling in MEDDIC</span><span class="dim" style="font-size:12.5px;line-height:1.4;" id="st2-sub">Applied to everyone from this company</span></div></div>
+        <div class="step"><span class="dot" id="st2"></span><div class="col" style="gap:2px;"><span style="font-size:14.5px;font-weight:500;" id="st2-title">Filling in MEDDIC</span><span class="dim" style="font-size:12.5px;line-height:1.4;" id="st2-sub">Applied to everyone from this company</span></div></div>
         <div class="step"><span class="dot" id="st3"></span><div class="col" style="gap:2px;"><span style="font-size:14.5px;font-weight:500;">Into Salesforce</span><span class="dim" style="font-size:12.5px;line-height:1.4;">Waiting for wifi</span></div></div>
       </div>
     </div>
@@ -631,6 +639,30 @@
     </div>
     <div class="grow scroll pad">
       <div class="col" style="gap:9px;">
+        <span class="eyebrow">HOW THE NOTE GETS READ</span>
+        <div class="seg" id="ai-seg" style="flex-shrink:0;">
+          <button type="button" data-ai="off" class="on">On the phone</button>
+          <button type="button" data-ai="on">Ask Claude</button>
+        </div>
+        <p class="dim" id="ai-hint" style="font-size:12.5px;line-height:1.5;margin:2px 0 0;">Keyword matching. Instant and works with no signal, but it can only quote sentences back at you.</p>
+
+        <div id="ai-wrap" style="display:none;flex-direction:column;gap:10px;margin-top:4px;">
+          <div class="fld">
+            <label for="ai-key">ANTHROPIC API KEY</label>
+            <input id="ai-key" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+            <span class="hint">Kept on this phone only. Roughly £0.002 a note.</span>
+          </div>
+          <div style="display:flex;align-items:flex-start;gap:11px;border:1px solid rgba(254,179,6,.3);background:rgba(254,179,6,.07);border-radius:14px;padding:14px;">
+            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style="flex-shrink:0;margin-top:1px;"><path d="M10 3.2l7.2 12.4H2.8L10 3.2z" stroke="#FEB306" stroke-width="1.4" stroke-linejoin="round"/><path d="M10 8v3.4" stroke="#FEB306" stroke-width="1.5" stroke-linecap="round"/><circle cx="10" cy="13.4" r=".9" fill="#FEB306"/></svg>
+            <div class="col" style="gap:3px;flex:1;">
+              <span style="font-size:13.5px;font-weight:600;color:var(--warn);">Prototype shortcut</span>
+              <span class="muted" style="font-size:12.5px;line-height:1.5;">The key sits in this browser, so anyone holding the phone could read it. Fine for testing with your own key; a built app must call Claude from a server instead.</span>
+            </div>
+          </div>
+          <button class="btn ghost sm" onclick="testClaude()" id="ai-test" style="flex-shrink:0;">Test the key</button>
+        </div>
+
+        <div style="height:1px;background:var(--line);margin:12px 0 4px;"></div>
         <span class="eyebrow">WHAT A BOOTH NOTE USUALLY GIVES YOU</span>
         <div class="card" id="rules-core" style="overflow:hidden;flex-shrink:0;"></div>
         <span class="eyebrow" style="margin-top:10px;">RARELY SAID AT A STAND</span>
@@ -1061,7 +1093,7 @@
         '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;width:100%;">' +
           '<div class="col" style="gap:5px;min-width:0;">' +
             '<span style="font-family:\'Space Grotesk\',sans-serif;font-size:18px;font-weight:600;letter-spacing:-.3px;">' + esc(e.name) + '</span>' +
-            '<span class="dim" style="font-size:12.5px;">' + esc([e.venue, e.stand ? 'Stand ' + e.stand : '', when].filter(Boolean).join(' · ')) + '</span>' +
+            '<span class="dim" style="font-size:12.5px;">' + esc([e.region, e.venue, e.stand ? 'Stand ' + e.stand : '', when].filter(Boolean).join(' · ')) + '</span>' +
           '</div>' +
           (live ? '<span style="font-size:10.5px;font-weight:600;letter-spacing:.6px;color:var(--accent);border:1px solid rgba(255,131,0,.4);border-radius:6px;padding:4px 8px;flex-shrink:0;">LIVE</span>'
                 : '<span class="dim" style="font-size:10.5px;border:1px solid var(--line-2);border-radius:6px;padding:4px 8px;flex-shrink:0;">' + (e.start > today ? 'UPCOMING' : 'PAST') + '</span>') +
@@ -1101,6 +1133,13 @@
   }
 
   var badgeSources = ['qr','card'];
+  var region = 'EMEA';
+
+  function paintRegion(){
+    Array.prototype.forEach.call(document.querySelectorAll('#ev-region button'), function(b){
+      b.classList.toggle('on', b.dataset.region === region);
+    });
+  }
   var COMMON_LANGS = ['English','Spanish','French','German','Dutch','Portuguese','Italian','Polish','Arabic','Japanese'];
   var languages = ['English'];
 
@@ -1164,6 +1203,8 @@
     document.getElementById('ev-followup').value = e ? e.followup : 3;
     document.getElementById('ev-retain').value = e ? e.retain : 30;
     document.getElementById('ev-key').value = e ? (e.apiKey || '') : '';
+    region = (e && e.region) ? e.region : 'EMEA';
+    paintRegion();
     badgeSources = (e && e.badgeSources && e.badgeSources.length) ? e.badgeSources.slice() : ['qr','card'];
     languages = (e && e.languages && e.languages.length) ? e.languages.slice() : ['English'];
     paintBadgeSources(); paintLanguages();
@@ -1173,6 +1214,9 @@
 
   Array.prototype.forEach.call(document.querySelectorAll('#ev-badge .opt'), function(b){
     b.addEventListener('click', function(e){ e.preventDefault(); toggleBadgeSource(b.dataset.src); });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#ev-region button'), function(b){
+    b.addEventListener('click', function(e){ e.preventDefault(); region = b.dataset.region; paintRegion(); });
   });
   document.getElementById('ev-lang-add').addEventListener('keydown', function(e){
     if(e.key === 'Enter'){ e.preventDefault(); addLanguage(); }
@@ -1187,6 +1231,7 @@
       name: name,
       venue: document.getElementById('ev-venue').value.trim(),
       stand: document.getElementById('ev-stand').value.trim(),
+      region: region,
       start: document.getElementById('ev-start').value,
       end: document.getElementById('ev-end').value,
       campaign: document.getElementById('ev-campaign').value.trim(),
@@ -1909,13 +1954,33 @@
     var note = {
       id: uid(), eventId: state.activeId, companyId: co.id,
       contactId: recordScope === 'person' && recordTarget.contact ? recordTarget.contact.id : null,
-      scope: recordScope, transcript: text, secs: secs, ts: Date.now(), fields: detect(text),
+      scope: recordScope, transcript: text, secs: secs, ts: Date.now(),
+      fields: detect(text), readBy: 'phone',
       by: 'miguel.traquina@iproov.com'
     };
     state.notes.unshift(note);
     save();
     lastCompanyId = co.id; window.lastCompanyId = co.id;
     runProcessing(co, note, existing);
+
+    if(aiReady()){
+      setAIStep('working');
+      extractWithClaude(text, co.name).then(function(r){
+        if(Object.keys(r.fields).length) note.fields = r.fields;
+        if(r.transcript) { note.rawTranscript = text; note.transcript = r.transcript; }
+        if(r.summary && !co.summary) co.summary = r.summary;
+        if(r.heat) co.heatOverride = r.heat;
+        note.readBy = 'claude';
+        save();
+        setAIStep('done');
+        if(current === 's-company' && viewingId === co.id) setTab('meddic');
+      }).catch(function(err){
+        note.readBy = 'phone-fallback';
+        note.aiError = String(err.message || err).slice(0, 120);
+        save();
+        setAIStep('failed', note.aiError);
+      });
+    }
   };
 
   function runProcessing(co, note, existing){
@@ -1928,11 +1993,27 @@
       ? 'Merging with the ' + existing + ' note' + (existing===1?'':'s') + ' already here'
       : (note.scope==='company' ? 'Applied to everyone from this company' : 'Applied to this person only');
     for(var i=0;i<4;i++) document.getElementById('st'+i).className='dot';
+    document.getElementById('st2-title').textContent = aiReady() ? 'Claude is reading it' : 'Filling in MEDDIC';
     go('s-processing');
     document.getElementById('st0').className='dot ok';
     document.getElementById('st1').className='dot live';
-    setTimeout(function(){ document.getElementById('st1').className='dot ok'; document.getElementById('st2').className='dot live'; }, 1000);
-    setTimeout(function(){ document.getElementById('st2').className='dot ok'; }, 2100);
+    setTimeout(function(){
+      document.getElementById('st1').className='dot ok';
+      if(!aiReady()) document.getElementById('st2').className='dot live';
+    }, 1000);
+    setTimeout(function(){ if(!aiReady()) document.getElementById('st2').className='dot ok'; }, 2100);
+  }
+
+  function setAIStep(stage, why){
+    var dot = document.getElementById('st2'), sub = document.getElementById('st2-sub');
+    if(!dot) return;
+    if(stage === 'working'){ dot.className = 'dot live'; sub.textContent = 'Reading the whole note, not just keywords'; }
+    if(stage === 'done'){ dot.className = 'dot ok'; sub.textContent = 'Read by Claude · transcript tidied too'; }
+    if(stage === 'failed'){
+      dot.className = 'dot ok';
+      sub.textContent = 'Claude could not be reached — used the phone instead';
+      toast('Claude did not answer, so the phone read it. ' + esc(why || ''));
+    }
   }
 
   /* =========================================================
@@ -2020,9 +2101,11 @@
     wrap.appendChild(sum);
     var hint = document.createElement('p');
     hint.className='dim'; hint.style.cssText='font-size:12.5px;line-height:1.5;margin:14px 0 24px;';
-    hint.textContent = notes.length > 1
+    var byClaude = notes.filter(function(n){ return n.readBy === 'claude'; }).length;
+    hint.textContent = (notes.length > 1
       ? notes.length + ' notes merged — the newest wins where they disagree, and anything you type by hand beats both.'
-      : 'Pulled from what was actually said; blanks are deliberate. Tap any line to correct it.';
+      : 'Pulled from what was actually said; blanks are deliberate. Tap any line to correct it.')
+      + (byClaude ? ' Read by Claude.' : '');
     wrap.appendChild(hint);
     body.appendChild(wrap);
   }
@@ -2257,8 +2340,129 @@
   /* =========================================================
      RULES
      ========================================================= */
-  window.openRules = function(){ renderRules(); go('s-rules'); };
+  /* =========================================================
+     READING THE NOTE
+     Keyword matching is the offline default. With a key, Claude does the
+     job properly: it tidies the transcript and fills MEDDIC from what was
+     actually said — the same "blank beats a guess" rule, enforced in the
+     prompt rather than by regex.
+     ========================================================= */
+  var ai = { on:false, key:'', model:'claude-haiku-4-5-20251001' };
+
+  function loadAI(){
+    try{
+      var r = JSON.parse(localStorage.getItem('booth.ai'));
+      if(r){ ai.on = !!r.on; ai.key = r.key || ''; ai.model = r.model || ai.model; }
+    }catch(e){}
+  }
+  function saveAI(){ try{ localStorage.setItem('booth.ai', JSON.stringify(ai)); }catch(e){} }
+
+  function paintAI(){
+    Array.prototype.forEach.call(document.querySelectorAll('#ai-seg button'), function(b){
+      b.classList.toggle('on', (b.dataset.ai === 'on') === ai.on);
+    });
+    document.getElementById('ai-wrap').style.display = ai.on ? 'flex' : 'none';
+    document.getElementById('ai-hint').textContent = ai.on
+      ? 'Claude reads the note, tidies the wording and fills MEDDIC properly. Needs signal — without it, the phone falls back to keywords.'
+      : 'Keyword matching. Instant and works with no signal, but it can only quote sentences back at you.';
+    document.getElementById('ai-key').value = ai.key;
+  }
+
+  function aiReady(){ return ai.on && ai.key && ai.key.length > 20; }
+
+  function meddicSpec(){
+    return MEDDIC.filter(function(d){ return ruleOn[d.k]; }).map(function(d){
+      return '  "' + d.k + '": ' + d.meddic + ' — ' + plain(d.label).toLowerCase();
+    }).join('\n');
+  }
+
+  function claudeCall(system, user, maxTokens){
+    return fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': ai.key,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: ai.model,
+        max_tokens: maxTokens || 1200,
+        system: system,
+        messages: [{ role:'user', content: user }]
+      })
+    }).then(function(r){
+      if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP ' + r.status + ' ' + t.slice(0,140)); });
+      return r.json();
+    }).then(function(j){
+      return (j.content && j.content[0] && j.content[0].text) || '';
+    });
+  }
+
+  window.testClaude = function(){
+    var btn = document.getElementById('ai-test');
+    ai.key = document.getElementById('ai-key').value.trim(); saveAI();
+    if(!aiReady()){ toast('Paste a key first'); return; }
+    btn.textContent = 'Testing…'; btn.disabled = true;
+    claudeCall('Reply with the single word: ready', 'ping', 16)
+      .then(function(t){ toast('Claude answered: ' + esc(t.trim().slice(0,40))); })
+      .catch(function(e){ toast('Key did not work — ' + esc(String(e.message).slice(0,90))); })
+      .then(function(){ btn.textContent = 'Test the key'; btn.disabled = false; });
+  };
+
+  var SYS = [
+    'You turn a salesperson\'s spoken note into MEDDIC fields. The note was dictated at a trade-show stand by an iProov employee summarising a conversation that has just finished. iProov sells face biometric verification: liveness, injection-attack detection, onboarding and account recovery. Use that to repair mangled speech-to-text (for example "eye proof" is iProov, "live nurse" is liveness).',
+    '',
+    'Rules, in order of importance:',
+    '1. Use ONLY what the note says. Never infer, never guess, never generalise from industry knowledge.',
+    '2. If something was not said, OMIT that key completely. Missing keys are correct and expected — a blank field is far better than an invented one.',
+    '3. Keep the speaker\'s own words where you can. Tidy grammar, not meaning.',
+    '4. One short sentence per field.',
+    '',
+    'Return ONE JSON object and nothing else. No markdown, no commentary.',
+    'Optional keys, include only those actually covered:',
+    '{{FIELDS}}',
+    '',
+    'Always include these three:',
+    '  "clean_transcript": the note with speech-recognition errors and punctuation fixed. Do not add or remove content.',
+    '  "summary": two or three sentences a colleague could read cold before following up.',
+    '  "heat": "hot" if there is a real problem, a number and an agreed next step; "warm" if some of that; "cold" if it was small talk.'
+  ].join('\n');
+
+  function extractWithClaude(text, companyName){
+    var system = SYS.replace('{{FIELDS}}', meddicSpec());
+    var ctx = 'Company: ' + (companyName || 'unknown') +
+      '\nLanguages likely spoken: ' + ((activeEvent() && activeEvent().languages) || ['English']).join(', ') +
+      '\n\nThe note:\n"""\n' + text + '\n"""';
+    return claudeCall(system, ctx, 1400).then(function(raw){
+      var t = String(raw).trim().replace(/^```(?:json)?/i, '').replace(/```$/,'').trim();
+      var j = JSON.parse(t);
+      var fields = {};
+      MEDDIC.forEach(function(d){
+        if(ruleOn[d.k] && j[d.k] && String(j[d.k]).trim()) fields[d.k] = String(j[d.k]).trim();
+      });
+      return {
+        fields: fields,
+        summary: j.summary ? String(j.summary).trim() : '',
+        transcript: j.clean_transcript ? String(j.clean_transcript).trim() : '',
+        heat: /^(hot|warm|cold)$/.test(j.heat) ? j.heat : null
+      };
+    });
+  }
+
+  window.openRules = function(){ renderRules(); paintAI(); go('s-rules'); };
   window.resetRules = function(){ MEDDIC.forEach(function(d){ ruleOn[d.k]=true; }); saveRules(); renderRules(); toast('All rules back on'); };
+  Array.prototype.forEach.call(document.querySelectorAll('#ai-seg button'), function(b){
+    b.addEventListener('click', function(e){
+      e.preventDefault();
+      ai.on = b.dataset.ai === 'on';
+      saveAI(); paintAI();
+    });
+  });
+  document.getElementById('ai-key').addEventListener('change', function(){
+    ai.key = this.value.trim(); saveAI();
+  });
+
   function plain(label){
     return label.charAt(0) + label.slice(1).toLowerCase();
   }
@@ -2304,6 +2508,7 @@
       ['Captured', function(ct){ return new Date(ct.ts).toISOString(); }],
       ['Scanned by', function(ct){ return ct.by; }],
       ['Event', function(){ return e.name || ''; }],
+      ['Region', function(){ return e.region || ''; }],
       ['Campaign', function(){ return e.campaign || ''; }],
       ['Lead source', function(){ return e.source || ''; }],
       ['Rating', function(ct,co){ return heatFor(co); }],
@@ -2315,6 +2520,10 @@
     });
     cols.push(['Summary', function(ct,co){ return co.summary || summarise(co, companyFields(co.id)); }]);
     cols.push(['Notes', function(ct,co){ return notesOf(co.id).map(function(n){ return n.transcript; }).join('  ||  '); }]);
+    cols.push(['Read by', function(ct,co){
+      var r = notesOf(co.id).map(function(n){ return n.readBy || 'phone'; });
+      return r.length ? (r.indexOf('claude') > -1 ? 'claude' : r[0]) : '';
+    }]);
     var rows = [cols.map(function(c){ return csvCell(c[0]); }).join(',')];
     evContacts().forEach(function(ct){
       var co = companyById(ct.companyId); if(!co) return;
@@ -2506,6 +2715,7 @@
   /* ---------- boot ---------- */
   paintBrand();
   loadRules();
+  loadAI();
   load();
   buildWave();
   if(activeEvent()) paintEvent();

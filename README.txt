@@ -31,7 +31,13 @@ Notes
   and which languages transcription expects. Both are multi-select.
 * Every field is editable — tap any line to correct it. Your version is
   kept and marked YOURS; a later note never overwrites it.
-* Nothing leaves the device. Sign-in, Salesforce and Apollo are mocked.
+* Nothing leaves the device UNLESS you switch the note reader to Claude
+  (Rules > How the note gets read). Then the transcript text — not the
+  audio — is sent to Anthropic's API with the key you paste in.
+* That key is held in the browser, so treat it as a testing convenience.
+  A built app must call Claude from a server so the key never reaches
+  the phone.
+* Sign-in, Salesforce and Apollo are still mocked.
 
 Brand
 -----
