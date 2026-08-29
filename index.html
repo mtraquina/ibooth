@@ -1162,12 +1162,25 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
         '<path d="M11.2 2.8v3.4h3.4M7.5 10.4h5M7.5 13.2h3.4" stroke="#6E8A9B" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
       pdf.addEventListener('click', function(ev){ ev.stopPropagation(); ev.preventDefault(); exportEventPdf(e.id); });
 
+      /* the settings for an event you already made — otherwise the only way
+         back in is through the scanner, which is not where you look for it */
+      var cog = document.createElement('button');
+      cog.type = 'button';
+      cog.setAttribute('aria-label', 'Settings for ' + e.name);
+      cog.style.cssText = 'position:absolute;top:96px;right:12px;width:38px;height:38px;border-radius:11px;' +
+        'display:flex;align-items:center;justify-content:center;background:transparent;';
+      cog.innerHTML = '<svg width="17" height="17" viewBox="0 0 20 20" fill="none">' +
+        '<path d="M13.4 3.9l3.1 3.1-8.7 8.7-4 .9.9-4 8.7-8.7z" stroke="#6E8A9B" stroke-width="1.5" stroke-linejoin="round"/>' +
+        '<path d="M11.6 5.7l2.7 2.7" stroke="#6E8A9B" stroke-width="1.5" stroke-linecap="round"/></svg>';
+      cog.addEventListener('click', function(ev){ ev.stopPropagation(); ev.preventDefault(); openEventSettings(e.id); });
+
       card.style.position = 'relative';
       card.style.paddingRight = '58px';
-      card.style.minHeight = '104px';
+      card.style.minHeight = '146px';
       card.appendChild(open);
       card.appendChild(del);
       card.appendChild(pdf);
+      card.appendChild(cog);
       body.appendChild(card);
     });
     var sp = document.createElement('div'); sp.style.height = '20px'; body.appendChild(sp);
@@ -1294,7 +1307,8 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     if(saved){
       txt.textContent = saved.siteBrief;
       txt.style.color = 'var(--ink-2)';
-      when.textContent = saved.siteBriefAt ? 'read ' + dayLabel(saved.siteBriefAt) : '';
+      when.textContent = (saved.siteBriefAt ? 'read ' + dayLabel(saved.siteBriefAt) : '') +
+        (saved.siteHow ? ' · ' + saved.siteHow : '');
       go.textContent = 'Read it again';
     } else {
       txt.textContent = e
@@ -1341,7 +1355,18 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     checkWebsite();
   }
 
-  window.editEvent = function(){ fillEventForm(activeEvent()); go('s-event'); };
+  window.editEvent = function(){ settingsFrom = null; fillEventForm(activeEvent()); go('s-event'); };
+
+  /* opened from the events list: edit that event whether or not it is the
+     one being scanned, and return to the list when done */
+  var settingsFrom = null;
+  window.openEventSettings = function(id){
+    var e = eventById(id);
+    if(!e){ toast('That event has gone'); return; }
+    settingsFrom = 'events';
+    fillEventForm(e);
+    go('s-event');
+  };
 
   Array.prototype.forEach.call(document.querySelectorAll('#ev-badge .opt'), function(b){
     b.addEventListener('click', function(e){ e.preventDefault(); toggleBadgeSource(b.dataset.src); });
@@ -1380,18 +1405,22 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       for(var i=0;i<state.events.length;i++) if(state.events[i].id === editingId){
         var prev = state.events[i];
         if(prev.siteBrief && prev.siteUrl === ev.website){
-          ev.siteBrief = prev.siteBrief; ev.siteUrl = prev.siteUrl; ev.siteBriefAt = prev.siteBriefAt;
+          ev.siteBrief = prev.siteBrief; ev.siteUrl = prev.siteUrl;
+          ev.siteBriefAt = prev.siteBriefAt; ev.siteHow = prev.siteHow;
         }
         state.events[i] = ev;
       }
     } else {
       state.events.unshift(ev);
     }
-    state.activeId = ev.id;
+    var cameFromList = settingsFrom === 'events';
+    settingsFrom = null;
     editingId = null;
+    if(!cameFromList) state.activeId = ev.id;
     save();
-    paintEvent();
-    if(evContacts().length){ go('s-list'); renderList(); }
+    if(state.activeId) paintEvent();
+    if(cameFromList){ renderEvents(); go('s-events'); }
+    else if(evContacts().length){ go('s-list'); renderList(); }
     else { go('s-scan'); startCamera(); }
     toast('Event saved');
   };
@@ -2816,28 +2845,81 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
      Anthropic's servers, not on the phone — a browser cannot read another
      site's HTML anyway, CORS forbids it. Scoped to the event's own domain so
      it cannot wander, and pinned to a model that carries the tool. */
-  var SITE_MODEL = 'claude-sonnet-5';
-  function claudeFetchCall(system, user, host, maxTokens){
-    var tool = { type:'web_fetch_20260318', name:'web_fetch', max_uses:4 };
-    if(host) tool.allowed_domains = [host, 'www.' + host];
+  /* Not every key can reach every model, and not every model carries every
+     server tool. Rather than pick one combination and fail, try them in
+     order of preference and take the first that actually answers. Each
+     attempt says what it was, so the app can tell you how it got there.
+     web_fetch reads the page itself; web_search is the fallback that finds
+     the same site through a search index instead. */
+  var SITE_ATTEMPTS = [
+    { model:'claude-sonnet-5',              tool:'fetch',  label:'read the page' },
+    { model:'claude-sonnet-5',              tool:'search', label:'searched for it' },
+    { model:'claude-haiku-4-5-20251001',    tool:'fetch',  label:'read the page' },
+    { model:'claude-haiku-4-5-20251001',    tool:'search', label:'searched for it' }
+  ];
+
+  function siteToolFor(kind, host){
+    if(kind === 'fetch'){
+      var f = { type:'web_fetch_20260318', name:'web_fetch', max_uses:4 };
+      if(host) f.allowed_domains = [host, 'www.' + host];
+      return f;
+    }
+    var s = { type:'web_search_20250305', name:'web_search', max_uses:3 };
+    if(host) s.allowed_domains = [host, 'www.' + host];
+    return s;
+  }
+
+  function oneSiteCall(attempt, system, user, host, maxTokens){
     return fetch('https://api.anthropic.com/v1/messages', {
       method:'POST',
       headers:{ 'content-type':'application/json', 'x-api-key': ai.key,
                 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
       body: JSON.stringify({
-        model: SITE_MODEL,
+        model: attempt.model,
         max_tokens: maxTokens || 700,
         system: system,
-        tools: [tool],
+        tools: [siteToolFor(attempt.tool, host)],
         messages: [{ role:'user', content: user }]
       })
     }).then(function(r){
-      if(!r.ok) return r.text().then(function(t){ throw new Error('HTTP ' + r.status + ' ' + t.slice(0,200)); });
+      if(!r.ok) return r.text().then(function(t){
+        var err = new Error('HTTP ' + r.status + ' ' + t.slice(0,240));
+        err.status = r.status; err.body = t;
+        throw err;
+      });
       return r.json();
     }).then(function(j){
-      return (j.content || []).filter(function(b){ return b.type === 'text'; })
+      var text = (j.content || []).filter(function(b){ return b.type === 'text'; })
         .map(function(b){ return b.text; }).join('').trim();
+      if(!text) throw new Error('nothing came back');
+      /* did a tool actually run? if not, the model answered from memory and
+         that is exactly the guess this feature is supposed to avoid */
+      var used = (j.content || []).some(function(b){ return b.type === 'server_tool_use'; });
+      if(!used){
+        var g = new Error('answered from memory without reading the site');
+        g.guessed = true;
+        throw g;
+      }
+      return { text: text, used: used, attempt: attempt };
     });
+  }
+
+  function claudeFetchCall(system, user, host, maxTokens, onProgress){
+    var i = 0, lastErr = null;
+    function next(){
+      if(i >= SITE_ATTEMPTS.length) return Promise.reject(lastErr || new Error('no route worked'));
+      var a = SITE_ATTEMPTS[i++];
+      if(onProgress) onProgress(a, i);
+      return oneSiteCall(a, system, user, host, maxTokens).catch(function(e){
+        /* a guess is the one failure worth remembering over an HTTP error:
+           it means the route worked and the model chose not to look */
+        if(e.guessed || !lastErr) lastErr = e;
+        /* a bad key will not get better on the next model */
+        if(e.status === 401) throw e;
+        return next();
+      });
+    }
+    return next();
   }
 
   window.summariseSite = function(){
@@ -2865,22 +2947,36 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       'No headings, no bullet points, no preamble — just the paragraph.'
     ].join('\n');
 
-    claudeFetchCall(system, 'Event: ' + e.name + '\nWebsite: ' + url + '\n\nBrief me on this event.', siteHost(url), 700)
-      .then(function(text){
-        if(!text) throw new Error('nothing came back');
-        e.siteBrief = text; e.siteUrl = url; e.siteBriefAt = Date.now();
+    claudeFetchCall(system, 'Event: ' + e.name + '\nWebsite: ' + url + '\n\nBrief me on this event.',
+                    siteHost(url), 700,
+                    function(a, n){ txt.textContent = n === 1 ? 'Fetching ' + siteHost(url) + '…' : 'Trying another route…'; })
+      .then(function(res){
+        e.siteBrief = res.text; e.siteUrl = url; e.siteBriefAt = Date.now();
+        e.siteHow = res.attempt.label + ' with ' + shortModel(res.attempt.model);
         save(); paintBrief();
-        toast('Brief written');
+        toast('Brief written — ' + res.attempt.label);
       })
       .catch(function(err){
-        var m = String(err.message || err);
+        var m = String(err.message || err), s = err.status;
         txt.style.color = 'var(--warn)';
-        txt.textContent = /web_fetch|tool|model/i.test(m)
-          ? 'This key cannot fetch web pages. Everything else still works — the brief is the only thing that needs it.'
-          : 'Could not read ' + siteHost(url) + ' — ' + m.slice(0,120);
+        txt.textContent =
+          s === 401 ? 'That key was refused. Check it under the rules icon.'
+        : s === 403 ? 'This key is not allowed to use the models that can read web pages. In the Claude Console, give its workspace access to Sonnet, or use an organisation key.'
+        : /credit|402/i.test(m) ? 'The key works, but the account has no credit on it.'
+        : err.guessed ? 'Claude answered without reading the site, so the brief was thrown away rather than saved as a guess. Try again, or leave it — nothing else depends on this.'
+        : /tool|web_fetch|web_search|not_found|model/i.test(m)
+            ? 'This key cannot reach a model that reads web pages. Everything else in the app still works — the brief is the only thing that needs it.'
+        : 'Could not read ' + siteHost(url) + ' — ' + m.slice(0,120);
         btn.disabled = false; btn.textContent = 'Try again';
       });
   };
+
+  function shortModel(m){
+    if(/sonnet/i.test(m)) return 'Sonnet';
+    if(/haiku/i.test(m)) return 'Haiku';
+    if(/opus/i.test(m)) return 'Opus';
+    return m;
+  }
 
   window.testClaude = function(){
     var btn = document.getElementById('ai-test');
@@ -2889,9 +2985,23 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     saveAI(); paintAI();
     if(!aiReady()){ toast('Paste a key first'); return; }
     btn.textContent = 'Testing…'; btn.disabled = true;
-    claudeCall('Reply with the single word: ready', 'ping', 16)
-      .then(function(t){ toast('Claude answered: ' + esc(t.trim().slice(0,40))); })
-      .catch(function(e){ toast('Key did not work — ' + esc(String(e.message).slice(0,90))); })
+    /* What is being tested is reachability, not obedience: any answer at all
+       means the key is valid and the phone can get to Anthropic. Printing the
+       reply only invites confusion — asked to "ping", a model says "pong". */
+    claudeCall('You are answering a connection test. Reply with the single word: ready.',
+               'Connection test.', 16)
+      .then(function(){ toast('Key works — Claude answered'); })
+      .catch(function(e){
+        var m = String(e.message || e);
+        toast(
+          /HTTP 401|authentication|invalid x-api-key/i.test(m) ? 'That key was refused. Check it, or make a new one in the Console.'
+          : /HTTP 403/i.test(m)                               ? 'The key is valid but not allowed to use this model.'
+          : /HTTP 429/i.test(m)                               ? 'Rate limited. Wait a moment and try again.'
+          : /credit|billing|HTTP 402/i.test(m)                ? 'The key works, but the account has no credit on it.'
+          : /Failed to fetch|NetworkError|Load failed/i.test(m) ? 'No answer from Anthropic. Check the phone has signal.'
+          : 'Key did not work — ' + esc(m.slice(0,90))
+        );
+      })
       .then(function(){ btn.textContent = 'Test the key'; btn.disabled = false; });
   };
 

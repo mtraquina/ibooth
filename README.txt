@@ -39,7 +39,14 @@ Notes
   the address exists. With a Claude key, "Read the site" fetches the page
   and writes a short brief on the show; the fetch happens on Anthropic's
   servers, because a browser is not allowed to read another site's HTML.
-  It uses claude-sonnet-5 for that one call; notes still use Haiku.
+  It tries Sonnet with web_fetch first, then falls back through web_search
+  and Haiku until one route answers — so a workspace key that cannot reach
+  every model still works. The stamp under the brief says which route it
+  took. If Claude answers without actually reading anything, the brief is
+  thrown away rather than saved as a guess.
+* THE PENCIL ICON on the events list opens that event's settings, for any
+  event, without making it the one you are scanning. Saving from there
+  returns you to the list and leaves the active event alone.
 * EXECUTIVE SUMMARY: the document icon under the bin on the events list
   builds a PDF at any time, for any event, including finished ones.
   Hot companies first, names and job titles only, no emails, no phones,
