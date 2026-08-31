@@ -59,12 +59,22 @@ Notes
   no raw transcripts — so it can be forwarded without becoming a
   mailing list. With a Claude key the opening read is written from the
   notes; without one it is counted on the phone and says so.
-* The event setup page decides which capture methods the scanner offers
-  and which languages transcription expects. Both are multi-select.
+* The event setup page decides which capture methods the scanner offers,
+  which languages transcription expects, AND which MEDDIC fields are
+  captured. The fields belong to the EVENT, not the phone, so everyone
+  working one stand captures the same set — which is what makes two
+  phones mergeable. They travel in the event code and the handover file.
+  A new event inherits the field set from your most recent one.
+  There is no longer a separate "What a note turns into" screen; the
+  sliders icon on the leads list opens the event settings at that section.
 * Every field is editable — tap any line to correct it. Your version is
   kept and marked YOURS; a later note never overwrites it.
-* WHO IS USING THIS PHONE: the first time you open it, the app asks your
-  name and email and remembers them. Every lead and every note is stamped
+* WHO IS USING THIS PHONE is now a full page rather than a panel that
+  slid up over the app, because on a small screen the panel could grow
+  taller than the phone and push its own "That's me" button out of reach,
+  with nothing behind it able to be tapped. It has a back arrow once you
+  are known, and it is the first thing you see when you sign in.
+  The app asks your name and email and remembers them. Every lead and every note is stamped
   with that, so a colleague's captures can be told from yours. Tap the
   circle top right of the events list to change it.
 * TWO PEOPLE AT ONE STAND. There is still no server, so you cannot see
@@ -83,12 +93,25 @@ Notes
   Merge onto ONE phone and export from there, or you will have two
   partial spreadsheets.
 * NO API KEY SHIPS IN THIS BUILD. The repo can safely be public.
-* Claude reads the notes by default, but each phone needs its own key:
-  Rules > How the note gets read > Your Anthropic key. Paste it once.
+* Claude reads the notes by default, but each phone needs its own key.
+  It is asked for during registration, under "How your notes get read" —
+  tap the circle top right of the events list to get back to it.
   It is kept in that phone's browser storage, greyed out afterwards and
   never shown again. "Forget it" wipes it from the phone.
   Until a key is pasted the app quietly reads notes on the phone with
   keyword matching instead, and marks each note so you can tell.
+* CAMERA AND MICROPHONE ARE ASKED FOR ONCE PER VISIT, not once per screen.
+  The app now holds the camera while you move between scanning, the leads
+  list and the event settings, and holds the microphone between notes, so
+  you are not prompted every time. It hands the camera back after three
+  minutes of not scanning, the microphone after two, and both the moment
+  you switch away from the app — so the lens is never left open across a
+  coffee break.
+  To stop iOS asking even once per visit: Safari > "aA" in the address bar
+  > Website Settings > Camera and Microphone > Allow. Better still, Share >
+  Add to Home Screen and open it from the icon: it then keeps its
+  permissions like an installed app. On Android, Chrome remembers the
+  answer for the site by itself.
 * The key is per phone AND per browser. Clearing browsing data, a
   private tab, or a different browser all mean pasting it again.
 * Anyone holding that key can spend against your Anthropic account, so

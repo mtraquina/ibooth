@@ -236,6 +236,75 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     </div>
   </section>
 
+  <!-- ============ WHO IS USING THIS PHONE ============ -->
+  <section class="screen" id="s-me">
+    <div class="apphead pad">
+      <span data-logo="mark" data-h="22"></span>
+      <span class="appname">iBooth</span>
+    </div>
+    <div class="pad row" style="padding-top:14px;padding-bottom:10px;gap:12px;">
+      <button class="iconbtn" id="me-back" onclick="closeMe()" aria-label="Back" style="display:none;">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M12 4l-6 6 6 6" stroke="#9DB3C0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="col" style="gap:3px;">
+        <span class="eyebrow" id="me-step">FIRST THINGS FIRST</span>
+        <h2 class="mid" id="me-title">Who is using this phone?</h2>
+      </div>
+    </div>
+    <div class="grow scroll pad" style="padding-top:8px;">
+      <p class="dim" style="font-size:13.5px;line-height:1.55;margin:0 0 20px;">Every lead you scan and every note you record is stamped with this, so a colleague's captures can be told from yours when the two are merged.</p>
+<div class="col" style="gap:14px;margin-top:18px;">
+    <div class="fld">
+      <label for="me-name">YOUR NAME</label>
+      <input id="me-name" placeholder="Miguel Traquina" autocomplete="name">
+    </div>
+    <div class="fld">
+      <label for="me-email">YOUR IPROOV EMAIL</label>
+      <input id="me-email" type="email" inputmode="email" placeholder="miguel.traquina@iproov.com" autocomplete="email" spellcheck="false">
+      <span class="hint" id="me-hint">Used as the identifier on each capture. Nothing is sent anywhere.</span>
+    </div>
+  </div>
+
+  <div style="height:1px;background:var(--line);margin:20px 0 16px;"></div>
+  <span class="eyebrow">HOW YOUR NOTES GET READ</span>
+  <div class="col" style="gap:9px;margin-top:10px;">
+    <div class="seg" id="ai-seg" style="flex-shrink:0;">
+      <button type="button" data-ai="off">On the phone</button>
+      <button type="button" data-ai="on" class="on">Ask Claude</button>
+    </div>
+    <p class="dim" id="ai-hint" style="font-size:12.5px;line-height:1.5;margin:2px 0 0;">Keyword matching. Instant and works with no signal, but it can only quote sentences back at you.</p>
+
+    <div id="ai-wrap" style="display:none;flex-direction:column;gap:12px;margin-top:4px;">
+      <div class="fld" id="ai-keyw">
+        <label for="ai-key">YOUR ANTHROPIC KEY</label>
+        <input id="ai-key" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
+        <div id="ai-saved" style="display:none;align-items:center;gap:10px;padding-top:6px;">
+          <span class="mono" id="ai-mask" style="font-size:12.5px;color:var(--ink-3);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+          <button type="button" class="btn ghost sm" id="ai-forget" onclick="forgetKey()" style="flex:0 0 auto;width:auto;padding:0 14px;min-height:38px;font-size:13px;">Forget it</button>
+        </div>
+        <span class="hint">Saved on this phone only, and never shown again once saved. You can add it later if you do not have it to hand.</span>
+      </div>
+      <span id="ai-state" style="font-size:12.5px;line-height:1.5;color:var(--warn);"></span>
+      <button class="btn ghost sm" onclick="testClaude()" id="ai-test" style="flex-shrink:0;">Test the key</button>
+      <div style="display:flex;align-items:flex-start;gap:11px;border:1px solid rgba(61,214,140,.25);background:rgba(61,214,140,.06);border-radius:14px;padding:14px;">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style="flex-shrink:0;margin-top:1px;"><path d="M10 2.6l6.2 2.5v5c0 3.8-2.6 7-6.2 8.3-3.6-1.3-6.2-4.5-6.2-8.3v-5L10 2.6z" stroke="#3DD68C" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        <div class="col" style="gap:3px;flex:1;">
+          <span style="font-size:13.5px;font-weight:600;color:var(--good);">No key ships in this app</span>
+          <span class="muted" style="font-size:12.5px;line-height:1.5;">Each phone holds its own. Only the note text is sent, never the audio. If Claude cannot be reached, the phone reads the note instead and says so.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+
+      <div style="height:24px;"></div>
+    </div>
+    <div class="pad safe-b" style="padding-top:12px;border-top:1px solid var(--line);">
+      <button class="btn" id="me-save" onclick="saveMe()">That's me</button>
+    </div>
+  </section>
+
   <!-- ============ EVENTS ============ -->
   <section class="screen" id="s-events">
     <div class="apphead pad">
@@ -360,6 +429,23 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
           </div>
           <span class="hint">Tap to turn one on or off. Improves transcription noticeably at European shows.</span>
         </div>
+        <div style="height:1px;background:var(--line);margin:4px 0;"></div>
+        <span class="eyebrow">WHAT A NOTE TURNS INTO</span>
+        <p class="dim" style="font-size:13px;line-height:1.55;margin:-4px 0 0;">MEDDIC, cut down to what a stand conversation actually yields. Everyone working this event captures the same set — that is what lets two phones be merged.</p>
+        <span class="eyebrow" style="margin-top:4px;">WHAT A BOOTH NOTE USUALLY GIVES YOU</span>
+        <div class="card" id="rules-core" style="overflow:hidden;flex-shrink:0;"></div>
+        <span class="eyebrow" style="margin-top:6px;">RARELY SAID AT A STAND</span>
+        <div class="card" id="rules-gap" style="overflow:hidden;flex-shrink:0;"></div>
+        <p class="dim" style="font-size:12.5px;line-height:1.5;margin:-2px 0 0;">Leave these on and they travel to Salesforce as named gaps for the account executive to fill, rather than looking like nothing was found.</p>
+        <button type="button" class="btn ghost sm" onclick="resetRules()" style="flex-shrink:0;">Put everything back on</button>
+        <div style="display:flex;align-items:flex-start;gap:11px;border:1px solid rgba(61,214,140,.25);background:rgba(61,214,140,.06);border-radius:14px;padding:14px;flex-shrink:0;">
+          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style="flex-shrink:0;margin-top:1px;"><path d="M10 2.6l6.2 2.5v5c0 3.8-2.6 7-6.2 8.3-3.6-1.3-6.2-4.5-6.2-8.3v-5L10 2.6z" stroke="#3DD68C" stroke-width="1.4" stroke-linejoin="round"/></svg>
+          <div class="col" style="gap:3px;flex:1;">
+            <span style="font-size:13.5px;font-weight:600;color:var(--good);">Blank beats a guess</span>
+            <span class="muted" style="font-size:12.5px;line-height:1.5;">Not said out loud? The field stays empty. Can\'t be turned off.</span>
+          </div>
+        </div>
+
         <div class="fld" id="ev-share-wrap" style="display:none;">
           <label>WORKING THIS STAND WITH SOMEONE ELSE</label>
           <button type="button" class="btn ghost sm" onclick="shareEvent()">Copy the event code</button>
@@ -667,73 +753,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   </section>
 
   <!-- ============ RULES ============ -->
-  <section class="screen" id="s-rules">
-    <div class="apphead pad">
-      <span data-logo="mark" data-h="22"></span>
-      <span class="appname">iBooth</span>
-    </div>
-    <div class="pad row" style="padding-top:12px;padding-bottom:4px;gap:14px;">
-      <button class="iconbtn" onclick="go('s-list');renderList()" aria-label="Back">
-        <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M12 4l-6 6 6 6" stroke="#9DB3C0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <h3 class="sm">What a note turns into</h3>
-    </div>
-    <div class="pad" style="padding-top:12px;padding-bottom:12px;">
-      <p class="dim" style="margin:0;font-size:13.5px;line-height:1.55;">MEDDIC, cut down to what a stand conversation actually yields. Set once for the event.</p>
-    </div>
-    <div class="grow scroll pad">
-      <div class="col" style="gap:9px;">
-        <span class="eyebrow">HOW THE NOTE GETS READ</span>
-        <div class="seg" id="ai-seg" style="flex-shrink:0;">
-          <button type="button" data-ai="off">On the phone</button>
-          <button type="button" data-ai="on" class="on">Ask Claude</button>
-        </div>
-        <p class="dim" id="ai-hint" style="font-size:12.5px;line-height:1.5;margin:2px 0 0;">Keyword matching. Instant and works with no signal, but it can only quote sentences back at you.</p>
 
-        <div id="ai-wrap" style="display:none;flex-direction:column;gap:12px;margin-top:4px;">
-
-          <div class="fld" id="ai-keyw">
-            <label for="ai-key">YOUR ANTHROPIC KEY</label>
-            <input id="ai-key" type="password" placeholder="sk-ant-..." autocomplete="off" spellcheck="false">
-            <div id="ai-saved" style="display:none;align-items:center;gap:10px;padding-top:6px;">
-              <span class="mono" id="ai-mask" style="font-size:12.5px;color:var(--ink-3);flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
-              <button type="button" class="btn ghost sm" id="ai-forget" onclick="forgetKey()" style="flex:0 0 auto;width:auto;padding:0 14px;min-height:38px;font-size:13px;">Forget it</button>
-            </div>
-            <span class="hint">Saved on this phone only, and never shown again once saved.</span>
-          </div>
-
-          <span id="ai-state" style="font-size:12.5px;line-height:1.5;color:var(--warn);"></span>
-          <button class="btn ghost sm" onclick="testClaude()" id="ai-test" style="flex-shrink:0;">Test the key</button>
-
-          <div style="display:flex;align-items:flex-start;gap:11px;border:1px solid rgba(61,214,140,.25);background:rgba(61,214,140,.06);border-radius:14px;padding:14px;">
-            <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style="flex-shrink:0;margin-top:1px;"><path d="M10 2.6l6.2 2.5v5c0 3.8-2.6 7-6.2 8.3-3.6-1.3-6.2-4.5-6.2-8.3v-5L10 2.6z" stroke="#3DD68C" stroke-width="1.4" stroke-linejoin="round"/></svg>
-            <div class="col" style="gap:3px;flex:1;">
-              <span style="font-size:13.5px;font-weight:600;color:var(--good);">No key ships in this app</span>
-              <span class="muted" style="font-size:12.5px;line-height:1.5;">Each phone holds its own key, typed in here. Only the note text is sent, never the audio. If Claude cannot be reached, the phone reads the note instead and says so.</span>
-            </div>
-          </div>
-        </div>
-
-        <div style="height:1px;background:var(--line);margin:12px 0 4px;"></div>
-        <span class="eyebrow">WHAT A BOOTH NOTE USUALLY GIVES YOU</span>
-        <div class="card" id="rules-core" style="overflow:hidden;flex-shrink:0;"></div>
-        <span class="eyebrow" style="margin-top:10px;">RARELY SAID AT A STAND</span>
-        <div class="card" id="rules-gap" style="overflow:hidden;flex-shrink:0;"></div>
-        <p class="dim" style="font-size:12.5px;line-height:1.5;margin:2px 0 0;">Leave these on and they travel to Salesforce as named gaps for the account executive to fill, rather than looking like nothing was found.</p>
-        <div style="display:flex;align-items:flex-start;gap:11px;border:1px solid rgba(61,214,140,.25);background:rgba(61,214,140,.06);border-radius:14px;padding:14px;margin-top:10px;flex-shrink:0;">
-          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style="flex-shrink:0;margin-top:1px;"><path d="M10 2.6l6.2 2.5v5c0 3.8-2.6 7-6.2 8.3-3.6-1.3-6.2-4.5-6.2-8.3v-5L10 2.6z" stroke="#3DD68C" stroke-width="1.4" stroke-linejoin="round"/></svg>
-          <div class="col" style="gap:3px;flex:1;">
-            <span style="font-size:13.5px;font-weight:600;color:var(--good);">Blank beats a guess</span>
-            <span class="muted" style="font-size:12.5px;line-height:1.5;">Not said out loud? The field stays empty. Can't be turned off.</span>
-          </div>
-        </div>
-        <div style="height:28px;"></div>
-      </div>
-    </div>
-    <div class="pad safe-b" style="padding-top:12px;border-top:1px solid var(--line);">
-      <button class="btn ghost" onclick="resetRules()">Put everything back on</button>
-    </div>
-  </section>
 
 </div>
 
@@ -750,25 +770,6 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       <textarea id="join-code" class="dictate" style="min-height:96px;font-family:'IBM Plex Mono',monospace;font-size:12px;" placeholder="iBOOTH1:…" spellcheck="false"></textarea>
     </div>
     <button class="btn" onclick="doJoin()">Join it</button>
-  </div>
-</div>
-
-<div class="scrim" id="me-scrim" onclick="closeMe()"></div>
-<div class="sheet" id="me-sheet">
-  <div class="grab"></div>
-  <h2 class="mid" id="me-title">Who is using this phone?</h2>
-  <p class="muted" style="font-size:13.5px;margin:5px 0 0;">Every lead you scan and every note you record is stamped with this, so a colleague's captures can be told from yours when the two are merged.</p>
-  <div class="col" style="gap:14px;margin-top:18px;">
-    <div class="fld">
-      <label for="me-name">YOUR NAME</label>
-      <input id="me-name" placeholder="Miguel Traquina" autocomplete="name">
-    </div>
-    <div class="fld">
-      <label for="me-email">YOUR IPROOV EMAIL</label>
-      <input id="me-email" type="email" inputmode="email" placeholder="miguel.traquina@iproov.com" autocomplete="email" spellcheck="false">
-      <span class="hint" id="me-hint">Used as the identifier on each capture. Nothing is sent anywhere.</span>
-    </div>
-    <button class="btn" onclick="saveMe()">That's me</button>
   </div>
 </div>
 
@@ -846,6 +847,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   function normaliseEvent(e){
     if(!e) return null;
     if(!e.id) e.id = uid();
+    if(!e.rules) e.rules = legacyRules() || allRules();
     if(!e.badgeSources || !e.badgeSources.length){
       // the old build always offered card reading alongside whatever was chosen
       var legacy = { qr:['qr','card'], api:['api','card'], card:['card'] };
@@ -936,7 +938,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     if(from){ from.classList.remove('on'); from.classList.add('behind'); setTimeout(function(){ from.classList.remove('behind'); }, 320); }
     to.classList.add('on');
     current = id;
-    if(id !== 's-scan') stopCamera();
+    if(id !== 's-scan') pauseCamera();
   }
   window.go = go;
 
@@ -1008,14 +1010,37 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     ')\\b', 'i');
   function meddicBy(k){ for(var i=0;i<MEDDIC.length;i++) if(MEDDIC[i].k===k) return MEDDIC[i]; return null; }
 
-  var ruleOn = {};
-  MEDDIC.forEach(function(d){ ruleOn[d.k] = true; });
-  function loadRules(){
-    try{ var r = JSON.parse(localStorage.getItem('booth.rules.v2'));
-      if(r) MEDDIC.forEach(function(d){ if(typeof r[d.k]==='boolean') ruleOn[d.k]=r[d.k]; });
-    }catch(e){}
+  /* Which MEDDIC fields this event captures. It belongs to the EVENT, not the
+     phone: two reps working one stand must capture the same set, or their two
+     days cannot be merged into one coherent record. Because it lives on the
+     event, it travels in the share code and the handover file for free. */
+  function allRules(){
+    var o = {}; MEDDIC.forEach(function(d){ o[d.k] = true; }); return o;
   }
-  function saveRules(){ try{ localStorage.setItem('booth.rules.v2', JSON.stringify(ruleOn)); }catch(e){} }
+  /* what the phone used to hold globally — kept only to migrate old events */
+  function legacyRules(){
+    var o = null;
+    try{
+      var r = JSON.parse(localStorage.getItem('booth.rules.v2'));
+      if(r){ o = allRules(); MEDDIC.forEach(function(d){ if(typeof r[d.k]==='boolean') o[d.k]=r[d.k]; }); }
+    }catch(e){}
+    return o;
+  }
+  function rulesFor(e){
+    if(e && e.rules) return e.rules;
+    return allRules();
+  }
+
+  /* A live view of the active event's rules, so the many places that read
+     ruleOn keep working unchanged. Repointed whenever the event changes. */
+  var ruleOn = allRules();
+  function useRulesOf(e){
+    if(e){
+      if(!e.rules) e.rules = legacyRules() || allRules();
+      ruleOn = e.rules;
+    } else ruleOn = allRules();
+  }
+  function saveRules(){ save(); }
 
   function sentences(text){
     var SEP='';
@@ -1173,18 +1198,22 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   function meLabel(){ return me.name || me.email || 'Unknown'; }
 
   window.openMe = function(){
-    document.getElementById('me-title').textContent = me.email ? 'Change who is using this phone' : 'Who is using this phone?';
+    var known = !!me.email;
+    /* first run is a step in signing up; later it is an edit you can back out of */
+    document.getElementById('me-step').textContent  = known ? 'THIS PHONE' : 'FIRST THINGS FIRST';
+    document.getElementById('me-title').textContent = known ? 'Change who is using this phone' : 'Who is using this phone?';
+    document.getElementById('me-back').style.display = known ? '' : 'none';
+    document.getElementById('me-save').textContent  = known ? 'Save' : "That's me";
     document.getElementById('me-name').value = me.name;
     document.getElementById('me-email').value = me.email;
-    document.getElementById('me-scrim').classList.add('on');
-    document.getElementById('me-sheet').classList.add('on');
+    paintAI();          // the key section lives here now, so paint it on open
+    go('s-me');
     setTimeout(function(){ document.getElementById('me-name').focus(); }, 250);
   };
   window.closeMe = function(){
     /* the first time round there is nothing to go back to, so it cannot be dismissed */
     if(!me.email) return;
-    document.getElementById('me-scrim').classList.remove('on');
-    document.getElementById('me-sheet').classList.remove('on');
+    renderEvents(); go('s-events');
   };
   window.saveMe = function(){
     var n = document.getElementById('me-name').value.trim();
@@ -1200,8 +1229,6 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     me.name = n; me.email = e;
     try{ localStorage.setItem('booth.me', JSON.stringify(me)); }catch(err){}
     paintMe();
-    document.getElementById('me-scrim').classList.remove('on');
-    document.getElementById('me-sheet').classList.remove('on');
     renderEvents(); go('s-events');
     toast('Hello, ' + n.split(' ')[0]);
   };
@@ -1479,6 +1506,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   }
 
   var editingId = null;
+  var pendingRules = null;
   function fillEventForm(e){
     var editing = !!e;
     editingId = editing ? e.id : null;
@@ -1505,6 +1533,11 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     paintBadgeSources(); paintLanguages();
     checkWebsite();
     document.getElementById('ev-share-wrap').style.display = editing ? 'flex' : 'none';
+    /* an event being created has no rules yet — show the defaults it will get */
+    useRulesOf(e || { rules: JSON.parse(JSON.stringify(
+      (state.events[0] && state.events[0].rules) || legacyRules() || allRules())) });
+    pendingRules = ruleOn;
+    renderRules();
   }
 
   window.editEvent = function(){ settingsFrom = null; fillEventForm(activeEvent()); go('s-event'); };
@@ -1551,7 +1584,8 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       badgeSources: badgeSources.slice(),
       apiKey: document.getElementById('ev-key').value.trim(),
       languages: languages.slice(),
-      retain: parseInt(document.getElementById('ev-retain').value, 10) || 30
+      retain: parseInt(document.getElementById('ev-retain').value, 10) || 30,
+      rules: JSON.parse(JSON.stringify(pendingRules || allRules()))
     };
     if(editingId){
       for(var i=0;i<state.events.length;i++) if(state.events[i].id === editingId){
@@ -1565,13 +1599,16 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     } else {
       state.events.unshift(ev);
     }
+    var backToLeads = settingsFrom === 'list';
     var cameFromList = settingsFrom === 'events';
     settingsFrom = null;
     editingId = null;
     if(!cameFromList) state.activeId = ev.id;
     save();
+    useRulesOf(eventById(ev.id));
     if(state.activeId) paintEvent();
-    if(cameFromList){ renderEvents(); go('s-events'); }
+    if(backToLeads){ renderList(); go('s-list'); }
+    else if(cameFromList){ renderEvents(); go('s-events'); }
     else if(evContacts().length){ go('s-list'); renderList(); }
     else { go('s-scan'); startCamera(); }
     toast('Event saved');
@@ -1580,6 +1617,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   var MODE_LABEL = { badge:'Badge QR', card:'Business card', manual:'By hand' };
   function paintEvent(){
     var e = normaliseEvent(activeEvent()); if(!e) return;
+    useRulesOf(e);
     document.getElementById('scan-event').textContent = e.name.length > 22 ? e.name.slice(0,20)+'…' : e.name;
     document.getElementById('l-event').textContent = e.name + (e.stand ? ' · Stand ' + e.stand : '');
 
@@ -1671,7 +1709,17 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   window.startCamera = function(){
     paintScanCount();
     paintGroupBar();
-    if(stream){ scanning = true; return; }
+    /* If we still hold the camera, wake it rather than asking for it again.
+       Every fresh getUserMedia is another permission prompt on iOS. */
+    if(stream){
+      clearTimeout(camIdle);
+      try{ stream.getVideoTracks().forEach(function(t){ t.enabled = true; }); }catch(e){}
+      var vv = document.getElementById('cam');
+      if(vv){ if(vv.srcObject !== stream) vv.srcObject = stream; try{ vv.play(); }catch(e){} }
+      var sp = document.getElementById('scan-status'); if(sp) sp.style.display='block';
+      if(!scanning){ scanning = true; tick(); }
+      return;
+    }
     document.getElementById('diag').style.display='none';
     if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ diagnose('camera', null); return; }
 
@@ -1747,8 +1795,28 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     pill('looking · ' + res + ' · ' + engine);
   }
 
+  /* Two different things, and the difference is the whole permission problem.
+     PAUSE keeps the camera we were already granted, just stops looking at it —
+     leaving a screen and coming back costs nothing. RELEASE hands the hardware
+     back, which means the next visit asks the phone's owner all over again.
+     So: pause on navigation, release when the app is put away, and release on
+     a timer so the lens is not held open all afternoon. */
+  var camIdle = null, CAM_GRACE = 180000;   /* three minutes */
+
+  function pauseCamera(){
+    scanning = false;
+    if(rafId) cancelAnimationFrame(rafId);
+    var st = document.getElementById('scan-status'); if(st) st.style.display='none';
+    if(!stream) return;
+    try{ stream.getVideoTracks().forEach(function(t){ t.enabled = false; }); }catch(e){}
+    if(torchOn) { try{ camTrack.applyConstraints({ advanced:[{ torch:false }] }); }catch(e){} torchOn = false; }
+    clearTimeout(camIdle);
+    camIdle = setTimeout(stopCamera, CAM_GRACE);
+  }
+
   function stopCamera(){
     scanning = false;
+    clearTimeout(camIdle);
     if(rafId) cancelAnimationFrame(rafId);
     var st = document.getElementById('scan-status'); if(st) st.style.display='none';
     if(stream){ stream.getTracks().forEach(function(t){ t.stop(); }); stream = null; }
@@ -2415,9 +2483,29 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     if(tw.style.display !== 'block'){ tw.style.display='block'; try{ document.getElementById('typed').focus({preventScroll:true}); }catch(e){} }
   };
 
+  /* Same bargain as the camera: hold the microphone between notes so the
+     second one does not ask again, and hand it back once the rep has
+     clearly stopped recording for a while. */
+  var micHeld = null, micIdle = null, MIC_GRACE = 120000;   /* two minutes */
+
+  function getMic(){
+    var live = micHeld && micHeld.getAudioTracks().some(function(t){ return t.readyState === 'live'; });
+    if(live){
+      clearTimeout(micIdle);
+      try{ micHeld.getAudioTracks().forEach(function(t){ t.enabled = true; }); }catch(e){}
+      return Promise.resolve(micHeld);
+    }
+    micHeld = null;
+    return navigator.mediaDevices.getUserMedia({ audio:true }).then(function(s){ micHeld = s; return s; });
+  }
+  function releaseMic(){
+    clearTimeout(micIdle);
+    if(micHeld){ micHeld.getTracks().forEach(function(t){ t.stop(); }); micHeld = null; }
+  }
+
   function startMeter(){
     if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
-    navigator.mediaDevices.getUserMedia({ audio:true }).then(function(s){
+    getMic().then(function(s){
       micStream=s;
       var AC = window.AudioContext || window.webkitAudioContext; if(!AC) return;
       audioCtx = new AC();
@@ -2466,7 +2554,11 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   function teardownAudio(){
     recording=false; clearInterval(timerId); clearTimeout(silenceTimer);
     if(recog){ try{ recog.onend=null; recog.stop(); }catch(e){} recog=null; }
-    if(micStream){ micStream.getTracks().forEach(function(t){t.stop();}); micStream=null; }
+    if(micStream){
+      try{ micStream.getAudioTracks().forEach(function(t){ t.enabled=false; }); }catch(e){}
+      micStream=null;
+      clearTimeout(micIdle); micIdle = setTimeout(releaseMic, MIC_GRACE);
+    }
     if(audioCtx){ try{ audioCtx.close(); }catch(e){} audioCtx=null; analyser=null; }
   }
   /* Typing is a first-class way to give the note — the chips must reflect it
@@ -3090,7 +3182,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     if(!e){ toast('Save the event first'); return; }
     var url = normaliseUrl(document.getElementById('ev-website').value);
     if(!validUrl(url) || !url){ toast('Check the website address'); return; }
-    if(!aiReady()){ toast('Add your Claude key first — Leads, then the rules icon'); return; }
+    if(!aiReady()){ toast('Add your Claude key first — the circle at the top right of the events list'); return; }
 
     var btn = document.getElementById('ev-brief-go'), txt = document.getElementById('ev-brief-text');
     btn.disabled = true; btn.textContent = 'Reading…';
@@ -3165,7 +3257,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
         var m = String(err.message || err), s = err.status;
         txt.style.color = 'var(--warn)';
         txt.textContent =
-          s === 401 ? 'That key was refused. Check it under the rules icon.'
+          s === 401 ? 'That key was refused. Check it under the circle at the top right of the events list.'
         : s === 403 ? 'This key is not allowed to use the models that can read web pages. In the Claude Console, give its workspace access to Sonnet, or use an organisation key.'
         : /credit|402/i.test(m) ? 'The key works, but the account has no credit on it.'
         : err.guessed ? 'Claude answered without reading the site, so the brief was thrown away rather than saved as a guess. Try again, or leave it — nothing else depends on this.'
@@ -3321,8 +3413,24 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     });
   }
 
-  window.openRules = function(){ renderRules(); paintAI(); go('s-rules'); };
-  window.resetRules = function(){ MEDDIC.forEach(function(d){ ruleOn[d.k]=true; }); saveRules(); renderRules(); toast('All rules back on'); };
+  /* The fields belong to the event now, so the old "rules" screen is gone and
+     this opens the event's settings at the part it used to show. */
+  window.openRules = function(){
+    var e = activeEvent();
+    if(!e){ toast('Open an event first'); return; }
+    settingsFrom = 'list';
+    fillEventForm(e);
+    go('s-event');
+    setTimeout(function(){
+      var box = document.querySelector('#s-event .grow.scroll');
+      var target = document.getElementById('rules-core');
+      if(box && target) box.scrollTop = Math.max(0, target.offsetTop - 150);
+    }, 340);
+  };
+  window.resetRules = function(){
+    MEDDIC.forEach(function(d){ ruleOn[d.k] = true; });
+    saveRules(); renderRules(); toast('All fields back on');
+  };
   Array.prototype.forEach.call(document.querySelectorAll('#ai-seg button'), function(b){
     b.addEventListener('click', function(e){
       e.preventDefault();
@@ -3469,6 +3577,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
 
     return {
       event: e,
+      rules: rulesFor(e),
       rows: rows,
       people: rows.reduce(function(a,r){ return a + r.people.length; }, 0),
       notes: rows.reduce(function(a,r){ return a + r.notes.length; }, 0),
@@ -3486,7 +3595,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
                   (r.people.length===1?' person':' people') + ')'];
       if(r.summary) bits.push('  summary: ' + r.summary);
       MEDDIC.forEach(function(m){
-        if(ruleOn[m.k] && r.fields[m.k]) bits.push('  ' + m.meddic + ': ' + r.fields[m.k]);
+        if(d.rules[m.k] && r.fields[m.k]) bits.push('  ' + m.meddic + ': ' + r.fields[m.k]);
       });
       return bits.join('\n');
     }).join('\n\n');
@@ -3523,7 +3632,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     if(d.hot) bits.push(d.hot + (d.hot===1?' company is':' companies are') + ' rated hot.');
     var counts = {};
     d.rows.forEach(function(r){
-      MEDDIC.forEach(function(m){ if(r.fields[m.k]) counts[m.k] = (counts[m.k]||0) + 1; });
+      MEDDIC.forEach(function(m){ if(d.rules[m.k] && r.fields[m.k]) counts[m.k] = (counts[m.k]||0) + 1; });
     });
     var top = Object.keys(counts).sort(function(a,b){ return counts[b]-counts[a]; }).slice(0,3);
     if(top.length){
@@ -3719,7 +3828,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       w.gap(1.5);
 
       MEDDIC.forEach(function(m){
-        if(!ruleOn[m.k] || !r.fields[m.k]) return;
+        if(!d.rules[m.k] || !r.fields[m.k]) return;
         w.need(9);
         var start = w.y;
         doc.setFont('helvetica','bold'); doc.setFontSize(7);
@@ -4268,13 +4377,14 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
 
   /* ---------- boot ---------- */
   paintBrand();
-  loadRules();
+  useRulesOf(activeEvent());
   loadAI();
   load();
   loadMe();
   buildWave();
   if(activeEvent()) paintEvent();
-  window.addEventListener('pagehide', function(){ stopCamera(); teardownAudio(); });
+  /* Putting the app away is the one moment the hardware really must go back. */
+  window.addEventListener('pagehide', function(){ stopCamera(); teardownAudio(); releaseMic(); });
 })();
 </script>
 </body>
