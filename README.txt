@@ -63,6 +63,25 @@ Notes
   and which languages transcription expects. Both are multi-select.
 * Every field is editable — tap any line to correct it. Your version is
   kept and marked YOURS; a later note never overwrites it.
+* WHO IS USING THIS PHONE: the first time you open it, the app asks your
+  name and email and remembers them. Every lead and every note is stamped
+  with that, so a colleague's captures can be told from yours. Tap the
+  circle top right of the events list to change it.
+* TWO PEOPLE AT ONE STAND. There is still no server, so you cannot see
+  each other live. What you can do:
+    1. One person sets the event up, then Event settings > Copy the event
+       code, and sends it over.
+    2. The other taps "Join a colleague's event" and pastes it. Both
+       phones now hold the SAME event id, which is what makes step 3
+       possible — without it the two days can never be lined up.
+    3. At the end of the day, one of you opens the leads list > export >
+       "Save my day as a handover file" and sends the .ibooth.json.
+    4. The other opens the same sheet and taps "Merge in a colleague's
+       file". People scanned by both are matched on email and merged, not
+       duplicated; the fuller record wins and both scanners are recorded.
+       Companies match on domain, then on name. Notes are all kept.
+  Merge onto ONE phone and export from there, or you will have two
+  partial spreadsheets.
 * NO API KEY SHIPS IN THIS BUILD. The repo can safely be public.
 * Claude reads the notes by default, but each phone needs its own key:
   Rules > How the note gets read > Your Anthropic key. Paste it once.

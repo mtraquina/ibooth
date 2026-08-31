@@ -232,7 +232,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
         <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
         Continue with Google
       </button>
-      <p class="dim" style="margin:0;font-size:12.5px;line-height:1.5;">Any @iproov.com account can join the event and scan. Sign-in is drawn, not real, in this prototype.</p>
+      <p class="dim" style="margin:0;font-size:12.5px;line-height:1.5;">Any @iproov.com account can join the event and scan. Real sign-in is not built yet, so the app asks who you are and remembers it — that is what stamps your name on every lead you capture.</p>
     </div>
   </section>
 
@@ -249,15 +249,17 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       </div>
       <div class="spacer"></div>
       <div class="row" style="gap:8px;">
-        <div class="avatar" style="width:32px;height:32px;font-size:11px;border-radius:50%;">MT</div>
+        <button class="avatar" id="me-avatar" onclick="openMe()" aria-label="Who is using this phone"
+          style="width:34px;height:34px;font-size:11px;border-radius:50%;justify-content:center;">–</button>
       </div>
     </div>
     <div class="grow scroll pad" id="evs-body"></div>
-    <div class="pad safe-b" style="padding-top:12px;border-top:1px solid var(--line);">
+    <div class="pad safe-b col" style="padding-top:12px;border-top:1px solid var(--line);gap:9px;">
       <button class="btn" onclick="newEvent()">
         <svg width="19" height="19" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="#011E2E" stroke-width="2.2" stroke-linecap="round"/></svg>
         New event
       </button>
+      <button class="btn ghost sm" onclick="openJoin()">Join a colleague's event</button>
     </div>
   </section>
 
@@ -357,6 +359,11 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
             <button type="button" class="btn ghost" style="width:auto;padding:0 16px;min-height:52px;" onclick="addLanguage()">Add</button>
           </div>
           <span class="hint">Tap to turn one on or off. Improves transcription noticeably at European shows.</span>
+        </div>
+        <div class="fld" id="ev-share-wrap" style="display:none;">
+          <label>WORKING THIS STAND WITH SOMEONE ELSE</label>
+          <button type="button" class="btn ghost sm" onclick="shareEvent()">Copy the event code</button>
+          <span class="hint">Send it to your colleague and have them tap "Join a colleague's event". You both get the same event, which is what lets the two phones be merged later.</span>
         </div>
         <div class="fld">
           <label for="ev-retain">DELETE AUDIO AFTER</label>
@@ -632,6 +639,17 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
         <button class="btn ghost" id="ex-share" onclick="doShare()" style="display:none;">Share it</button>
       </div>
       <p class="dim" style="font-size:11.5px;text-align:center;margin:14px 0 0;">Opens in Excel, Numbers or Sheets.</p>
+
+      <div style="height:1px;background:var(--line);margin:16px 0 14px;"></div>
+      <span class="eyebrow">WORKING THIS STAND WITH SOMEONE ELSE</span>
+      <div class="col" style="gap:10px;margin-top:11px;">
+        <button class="btn ghost" onclick="doHandover()">Save my day as a handover file</button>
+        <label class="btn ghost" style="cursor:pointer;">
+          Merge in a colleague's file
+          <input type="file" accept=".json,application/json" id="merge-in" style="display:none;" onchange="mergeFile(this)">
+        </label>
+      </div>
+      <p class="dim" style="font-size:11.5px;text-align:center;margin:12px 0 0;line-height:1.5;">One of you merges the other's file at the end of the day. People scanned by both are matched on email, not duplicated.</p>
     </div>
 
     <div class="scrim" id="scrim" onclick="closeSync()"></div>
@@ -720,6 +738,39 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="scrim" id="join-scrim" onclick="closeJoin()"></div>
+<div class="sheet" id="join-sheet">
+  <div class="grab"></div>
+  <h2 class="mid">Join a colleague's event</h2>
+  <p class="muted" style="font-size:13.5px;margin:5px 0 0;">Paste the code they sent you. You get the same event, set up identically — which is what lets the two phones be merged afterwards.</p>
+  <div class="col" style="gap:14px;margin-top:18px;">
+    <div class="fld">
+      <label for="join-code">EVENT CODE</label>
+      <textarea id="join-code" class="dictate" style="min-height:96px;font-family:'IBM Plex Mono',monospace;font-size:12px;" placeholder="iBOOTH1:…" spellcheck="false"></textarea>
+    </div>
+    <button class="btn" onclick="doJoin()">Join it</button>
+  </div>
+</div>
+
+<div class="scrim" id="me-scrim" onclick="closeMe()"></div>
+<div class="sheet" id="me-sheet">
+  <div class="grab"></div>
+  <h2 class="mid" id="me-title">Who is using this phone?</h2>
+  <p class="muted" style="font-size:13.5px;margin:5px 0 0;">Every lead you scan and every note you record is stamped with this, so a colleague's captures can be told from yours when the two are merged.</p>
+  <div class="col" style="gap:14px;margin-top:18px;">
+    <div class="fld">
+      <label for="me-name">YOUR NAME</label>
+      <input id="me-name" placeholder="Miguel Traquina" autocomplete="name">
+    </div>
+    <div class="fld">
+      <label for="me-email">YOUR IPROOV EMAIL</label>
+      <input id="me-email" type="email" inputmode="email" placeholder="miguel.traquina@iproov.com" autocomplete="email" spellcheck="false">
+      <span class="hint" id="me-hint">Used as the identifier on each capture. Nothing is sent anywhere.</span>
+    </div>
+    <button class="btn" onclick="saveMe()">That's me</button>
+  </div>
+</div>
 
 <div id="pdf-veil" style="display:none;position:fixed;inset:0;z-index:126;background:rgba(1,15,23,.82);align-items:center;justify-content:center;flex-direction:column;gap:16px;">
   <div style="width:34px;height:34px;border:3px solid #14526E;border-top-color:#FF8300;border-radius:50%;animation:spin 1s linear infinite;"></div>
@@ -936,7 +987,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     { k:'criteria',    label:"HOW THEY'LL JUDGE IT",   meddic:'Decision criteria', core:true,
       re:/\b(has to|have to|must|needs? to|requirement|criteria|non.?negotiable|deal.?breaker|injection|spoof|liveness|accessib|latency|accuracy|certif|iso ?27001|soc ?2|gdpr|on.?prem|integrat|sdk)\b/i },
     { k:'competition', label:"WHO ELSE THEY'RE SEEING",meddic:'Competition',       core:true,
-      re:/\b(compet\w*|incumbent|another (?:vendor|supplier|provider|tool|system|company)|other (?:vendors|suppliers|providers)|also (?:talking|looking|speaking) to|shortlist|rfp|tender|evaluating|versus|instead of|already (?:use|using))\b/i },
+      re:/\b(compet\w*|incumbent|another (?:vendor|supplier|provider|tool|system|company)|other (?:vendors|suppliers|providers)|also (?:talking|looking|speaking) to|shortlist|rfp|tender|evaluating|versus|instead of|already (?:use|using|in there)|onfido|jumio|socure|veriff|idnow|au10tix|incode|persona|sumsub|daon|facetec|entrust|mitek|trulioo|yoti)\b/i },
     { k:'champion',    label:'WHO IS ON OUR SIDE',      core:true, meddic:'Champion',
       re:/\b(keen|excited|enthusias|championing|pushing|advocat|wants to|will take|owns this|drive|sponsor|on board|loved|really interested)\b/i },
     { k:'economic',    label:'WHO HOLDS THE BUDGET',   meddic:'Economic buyer',    core:false,
@@ -946,7 +997,15 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     { k:'next',        label:'WHAT WAS AGREED',        meddic:'Next step',         core:true,
       re:/\b(i'?ll\b|i will\b|we'?ll\b|we will\b|going to\b|need to\b|let'?s\b|next step|follow.?up|send (?:her|him|them|over|through|the)|intro(?:duce|duction)?\b|book (?:a|her|him|them)|schedule|arrange|set up a|demo\b|proposal|pilot|trial|catch up)\b/i }
   ];
-  var NUM = /\b(\d[\d,.]*)\s*(k\b|m\b|thousand|million|billion|%|percent)?\b/i;
+  /* A dictated figure usually arrives as words, not digits: a rep says
+     "about forty thousand calls a month" and the transcript spells it out.
+     Matching digits alone missed most of the numbers people actually give. */
+  var WORDNUM = '(?:a |one |two |three |four |five |six |seven |eight |nine |ten |eleven |twelve |twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety|hundred|couple of )+';
+  var NUM = new RegExp(
+    '\\b(?:' +
+      '(\\d[\\d,.]*)\\s*(k\\b|m\\b|thousand|million|billion|%|percent)?' +
+      '|' + WORDNUM + '\\s*(?:thousand|million|billion|hundred|percent)' +
+    ')\\b', 'i');
   function meddicBy(k){ for(var i=0;i<MEDDIC.length;i++) if(MEDDIC[i].k===k) return MEDDIC[i]; return null; }
 
   var ruleOn = {};
@@ -981,9 +1040,10 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       var i;
       if(d.num){
         var m = String(text).match(NUM);
-        if(!(m && (m[2] || parseFloat(m[1].replace(/,/g,'')) >= 100))) return;
+        // either a spelled-out quantity, or a digit with a scale word, or a big enough digit
+        if(!(m && (!m[1] || m[2] || parseFloat(m[1].replace(/,/g,'')) >= 100))) return;
         for(i=0;i<sents.length;i++){
-          if(!used[i] && NUM.test(sents[i]) && /\d/.test(sents[i])){
+          if(!used[i] && NUM.test(sents[i])){
             out.metrics = cap(sents[i].replace(/[.!?]+$/,'')); used[i]=1; return;
           }
         }
@@ -1037,6 +1097,16 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
 
   /* ---------- lookups ---------- */
   function companyById(id){ for(var i=0;i<state.companies.length;i++) if(state.companies[i].id===id) return state.companies[i]; return null; }
+  /* A "scanned by" line is noise on a one-person event and essential on a
+     merged one, so it only appears once a second name is present. */
+  function manyScanners(){
+    var seen = {}, n = 0;
+    evContacts().forEach(function(c){
+      var k = c.by || c.byName; if(k && !seen[k]){ seen[k] = 1; n++; }
+    });
+    return n > 1;
+  }
+
   function contactsOf(cid){ return state.contacts.filter(function(c){ return c.companyId === cid; }); }
   function notesOf(cid){ return state.notes.filter(function(n){ return n.companyId === cid; }).sort(function(a,b){ return b.ts - a.ts; }); }
 
@@ -1079,7 +1149,67 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
      ========================================================= */
   /* Always the events list, empty or not. A first-run screen that differs
      from the everyday one teaches the wrong shape of the app. */
-  window.signIn = function(){ renderEvents(); go('s-events'); };
+  /* =========================================================
+     WHO IS USING THIS PHONE
+     There is no real sign-in yet, so the app asks once and remembers.
+     That is what makes a two-phone test honest: every capture carries
+     the name of whoever actually made it, rather than a constant.
+     ========================================================= */
+  var me = { name:'', email:'' };
+  function loadMe(){
+    try{
+      var r = JSON.parse(localStorage.getItem('booth.me'));
+      if(r && r.email){ me.name = r.name || ''; me.email = r.email || ''; }
+    }catch(e){}
+    paintMe();
+  }
+  function paintMe(){
+    var el = document.getElementById('me-avatar');
+    if(el){
+      el.textContent = me.name ? initials(me.name) : '–';
+      el.title = me.email || 'Tap to say who you are';
+    }
+  }
+  function meLabel(){ return me.name || me.email || 'Unknown'; }
+
+  window.openMe = function(){
+    document.getElementById('me-title').textContent = me.email ? 'Change who is using this phone' : 'Who is using this phone?';
+    document.getElementById('me-name').value = me.name;
+    document.getElementById('me-email').value = me.email;
+    document.getElementById('me-scrim').classList.add('on');
+    document.getElementById('me-sheet').classList.add('on');
+    setTimeout(function(){ document.getElementById('me-name').focus(); }, 250);
+  };
+  window.closeMe = function(){
+    /* the first time round there is nothing to go back to, so it cannot be dismissed */
+    if(!me.email) return;
+    document.getElementById('me-scrim').classList.remove('on');
+    document.getElementById('me-sheet').classList.remove('on');
+  };
+  window.saveMe = function(){
+    var n = document.getElementById('me-name').value.trim();
+    var e = document.getElementById('me-email').value.trim().toLowerCase();
+    var hint = document.getElementById('me-hint');
+    if(!n){ toast('Your name, so a colleague can tell your leads from theirs'); return; }
+    if(!/^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$/.test(e)){
+      hint.style.color = '#E5484D';
+      hint.textContent = 'That is not an email address. It is the identifier each capture is stamped with.';
+      return;
+    }
+    hint.style.color = ''; hint.textContent = 'Used as the identifier on each capture. Nothing is sent anywhere.';
+    me.name = n; me.email = e;
+    try{ localStorage.setItem('booth.me', JSON.stringify(me)); }catch(err){}
+    paintMe();
+    document.getElementById('me-scrim').classList.remove('on');
+    document.getElementById('me-sheet').classList.remove('on');
+    renderEvents(); go('s-events');
+    toast('Hello, ' + n.split(' ')[0]);
+  };
+
+  window.signIn = function(){
+    if(!me.email){ openMe(); return; }
+    renderEvents(); go('s-events');
+  };
 
   window.newEvent = function(){
     editingId = null;
@@ -1149,7 +1279,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
         '</div>' +
         '<div style="display:flex;gap:0;width:100%;border-top:1px solid ' + (live ? 'rgba(255,131,0,.18)' : 'var(--line)') + ';padding-top:12px;">' +
           '<span class="stat"><b>' + people + '</b><span>PEOPLE</span></span>' +
-          '<span class="stat"><b>' + cos.length + '</b><span>COMPANIES</span></span>' +
+          '<span class="stat"><b>' + cos.length + '</b><span>' + (cos.length === 1 ? 'COMPANY' : 'COMPANIES') + '</span></span>' +
           '<span class="stat"><b style="color:' + (unsent ? 'var(--warn)' : 'var(--good)') + '">' + unsent + '</b><span>NOT IN CRM</span></span>' +
         '</div>';
       onTap(open, function(){ openEventById(e.id); });
@@ -1374,6 +1504,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     languages = (e && e.languages && e.languages.length) ? e.languages.slice() : ['English'];
     paintBadgeSources(); paintLanguages();
     checkWebsite();
+    document.getElementById('ev-share-wrap').style.display = editing ? 'flex' : 'none';
   }
 
   window.editEvent = function(){ settingsFrom = null; fillEventForm(activeEvent()); go('s-event'); };
@@ -1862,7 +1993,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     var ct = {
       id: uid(), eventId: state.activeId, name: p.name, title: p.title || '—', company: p.company || '—',
       email: p.email || '—', phone: p.phone || '', source: p.source, ts: Date.now(),
-      by: 'miguel.traquina@iproov.com'
+      by: me.email || 'unknown', byName: meLabel()
     };
     var co = findOrCreateCompany(ct);
     ct.companyId = co.id;
@@ -2338,6 +2469,16 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     if(micStream){ micStream.getTracks().forEach(function(t){t.stop();}); micStream=null; }
     if(audioCtx){ try{ audioCtx.close(); }catch(e){} audioCtx=null; analyser=null; }
   }
+  /* Typing is a first-class way to give the note — the chips must reflect it
+     the same way they reflect speech, or they look broken to anyone who types. */
+  (function(){
+    var t = document.getElementById('typed');
+    if(t) t.addEventListener('input', function(){
+      var spoken = (finalText + interimText).trim();
+      paintCoverage(detect((spoken + ' ' + this.value).trim()));
+    });
+  })();
+
   window.cancelRecording = function(){
     teardownAudio(); toast('Note discarded');
     go('s-scan'); startCamera();
@@ -2360,7 +2501,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       contactId: recordScope === 'person' && recordTarget.contact ? recordTarget.contact.id : null,
       scope: recordScope, transcript: text, secs: secs, ts: Date.now(),
       fields: detect(text), readBy: 'phone',
-      by: 'miguel.traquina@iproov.com'
+      by: me.email || 'unknown', byName: meLabel()
     };
     state.notes.unshift(note);
     save();
@@ -2529,6 +2670,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
             '<span class="dim" style="font-size:12.5px;">'+esc(ct.title)+'</span>'+
             '<span class="muted" style="font-size:12.5px;word-break:break-all;">'+esc(ct.email)+'</span>'+
             (personal ? '<span style="font-size:11px;color:var(--accent);margin-top:3px;">own note · overrides the company one</span>' : '')+
+            (manyScanners() && ct.byName ? '<span class="dim" style="font-size:11px;margin-top:3px;">scanned by '+esc(ct.byName)+'</span>' : '')+
           '</div>'+
           '<div id="ctcorner" style="display:flex;align-items:center;gap:9px;flex-shrink:0;">'+
             '<span class="dim" style="font-size:11px;">'+hhmm(ct.ts)+'</span>'+
@@ -3238,7 +3380,8 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       ['Email', function(ct){ return ct.email; }],
       ['Phone', function(ct){ return ct.phone; }],
       ['Captured', function(ct){ return new Date(ct.ts).toISOString(); }],
-      ['Scanned by', function(ct){ return ct.by; }],
+      ['Scanned by', function(ct){ return ct.byName || ''; }],
+      ['Scanned by email', function(ct){ return ct.by || ''; }],
       ['Event', function(){ return e.name || ''; }],
       ['Region', function(){ return e.region || ''; }],
       ['Campaign', function(){ return e.campaign || ''; }],
@@ -3646,6 +3789,231 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       });
   };
 
+  /* =========================================================
+     TWO PHONES, ONE EVENT
+     There is no server, so two reps cannot see each other live. What they
+     can do is start from an identical event — same id, same settings — and
+     merge at the end of the day. Sharing the id is the whole trick: without
+     it the two datasets can never be lined up.
+     ========================================================= */
+  function b64encode(obj){
+    var json = JSON.stringify(obj);
+    // btoa is byte-oriented; encode first so accented names survive
+    return btoa(unescape(encodeURIComponent(json)));
+  }
+  function b64decode(str){
+    return JSON.parse(decodeURIComponent(escape(atob(String(str).trim()))));
+  }
+
+  /* the event settings only — no captures, no personal data */
+  window.shareEvent = function(){
+    var e = briefEvent() || activeEvent();
+    if(!e){ toast('Save the event first'); return; }
+    var payload = JSON.parse(JSON.stringify(e));
+    var code = 'iBOOTH1:' + b64encode(payload);
+    var done = function(){ toast('Code copied — send it to your colleague'); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(code).then(done).catch(function(){ showCode(code); });
+    } else showCode(code);
+  };
+  function showCode(code){
+    openEdit('EVENT CODE', code, true, function(){});
+    toast('Copy this and send it to your colleague');
+  }
+
+  window.openJoin = function(){
+    document.getElementById('join-code').value = '';
+    document.getElementById('join-scrim').classList.add('on');
+    document.getElementById('join-sheet').classList.add('on');
+  };
+  window.closeJoin = function(){
+    document.getElementById('join-scrim').classList.remove('on');
+    document.getElementById('join-sheet').classList.remove('on');
+  };
+  window.doJoin = function(){
+    var raw = document.getElementById('join-code').value.trim();
+    if(!raw){ toast('Paste the code first'); return; }
+    var ev;
+    try{
+      ev = b64decode(raw.replace(/^iBOOTH1:/, ''));
+      if(!ev || !ev.id || !ev.name) throw new Error('not an event');
+    }catch(err){ toast('That code did not read. Ask them to send it again.'); return; }
+
+    var existing = eventById(ev.id);
+    if(existing){
+      /* already joined — refresh the settings but never touch what was captured */
+      for(var i=0;i<state.events.length;i++) if(state.events[i].id === ev.id) state.events[i] = normaliseEvent(ev);
+      save(); closeJoin(); state.activeId = ev.id; paintEvent(); renderEvents(); go('s-events');
+      toast('Settings updated for ' + ev.name);
+      return;
+    }
+    state.events.unshift(normaliseEvent(ev));
+    state.activeId = ev.id;
+    save(); closeJoin(); paintEvent(); renderEvents(); go('s-events');
+    toast('Joined ' + ev.name + ' — start scanning');
+  };
+
+  /* ---------- handover: one phone's whole event, for merging ---------- */
+  function handoverName(e){
+    var slug = (e && e.name ? e.name : 'ibooth').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    var who = (me.name || 'me').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    return slug + '-' + who + '.ibooth.json';
+  }
+
+  window.doHandover = function(){
+    var e = activeEvent();
+    if(!e){ toast('No event open'); return; }
+    var id = e.id;
+    var payload = {
+      format: 'ibooth-handover-1',
+      from: { name: me.name, email: me.email },
+      at: Date.now(),
+      event: e,
+      companies: state.companies.filter(function(c){ return c.eventId === id; }),
+      contacts:  state.contacts.filter(function(c){ return c.eventId === id; }),
+      notes:     state.notes.filter(function(n){ return n.eventId === id; })
+    };
+    try{
+      var blob = new Blob([JSON.stringify(payload)], { type:'application/json' });
+      var url = URL.createObjectURL(blob), a = document.createElement('a');
+      a.href = url; a.download = handoverName(e);
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 2000);
+      closeExport();
+      toast('Saved ' + handoverName(e) + ' — send it to whoever is merging');
+    }catch(err){ toast('Could not save the file here'); }
+  };
+
+  /* ---------- merging a colleague's file into this phone ---------- */
+  function norm(x){ return String(x || '').trim().toLowerCase().replace(/\s+/g,' '); }
+  function realEmail(x){ return /^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$/.test(String(x||'').trim()); }
+
+  window.mergeFile = function(input){
+    var f = input.files && input.files[0];
+    input.value = '';
+    if(!f) return;
+    var r = new FileReader();
+    r.onload = function(){
+      var pay;
+      try{
+        pay = JSON.parse(r.result);
+        if(pay.format !== 'ibooth-handover-1') throw new Error('wrong file');
+      }catch(err){ toast('That is not an iBooth handover file'); return; }
+      applyMerge(pay);
+    };
+    r.onerror = function(){ toast('Could not read that file'); };
+    r.readAsText(f);
+  };
+
+  function applyMerge(pay){
+    var ev = pay.event;
+    if(!ev || !ev.id){ toast('That file has no event in it'); return; }
+
+    var mine = eventById(ev.id);
+    if(!mine){
+      /* they worked an event this phone has never seen — take it whole */
+      state.events.unshift(normaliseEvent(ev));
+      mine = eventById(ev.id);
+    }
+    var id = ev.id;
+
+    /* companies first, so contacts can be pointed at the right one */
+    var mineCos = state.companies.filter(function(c){ return c.eventId === id; });
+    var coMap = {};      // their company id -> the company id on this phone
+    var addedCo = 0;
+    (pay.companies || []).forEach(function(theirs){
+      var match = null;
+      mineCos.forEach(function(c){
+        if(match) return;
+        if(theirs.domain && c.domain && norm(theirs.domain) === norm(c.domain)) match = c;
+        else if(norm(theirs.name) && norm(theirs.name) === norm(c.name)) match = c;
+      });
+      if(match){
+        coMap[theirs.id] = match.id;
+        if(!match.domain && theirs.domain) match.domain = theirs.domain;
+        /* a hand-typed summary or field edit outranks anything automatic,
+           so only fill what this phone has left empty */
+        if(!match.summary && theirs.summary) match.summary = theirs.summary;
+        if(theirs.edited){ match.edited = match.edited || {};
+          Object.keys(theirs.edited).forEach(function(k){
+            if(match.edited[k] === undefined) match.edited[k] = theirs.edited[k];
+          }); }
+      } else {
+        var copy = JSON.parse(JSON.stringify(theirs));
+        state.companies.push(copy);
+        mineCos.push(copy);
+        coMap[theirs.id] = copy.id;
+        addedCo++;
+      }
+    });
+
+    /* people: the same person scanned by both reps is one person, not two */
+    var mineCts = state.contacts.filter(function(c){ return c.eventId === id; });
+    var ctMap = {}, addedCt = 0, dupCt = 0;
+    (pay.contacts || []).forEach(function(theirs){
+      var targetCo = coMap[theirs.companyId] || theirs.companyId;
+      var match = null;
+      mineCts.forEach(function(c){
+        if(match) return;
+        if(realEmail(theirs.email) && realEmail(c.email) && norm(theirs.email) === norm(c.email)) match = c;
+        else if(!realEmail(theirs.email) && !realEmail(c.email) &&
+                norm(theirs.name) && norm(theirs.name) === norm(c.name) && c.companyId === targetCo) match = c;
+      });
+      if(match){
+        ctMap[theirs.id] = match.id;
+        dupCt++;
+        /* keep whichever record is fuller, and remember both scanners */
+        ['title','email','phone'].forEach(function(k){
+          var cur = String(match[k] || '').trim();
+          if((!cur || cur === '—') && theirs[k] && theirs[k] !== '—') match[k] = theirs[k];
+        });
+        if(theirs.byName && match.byName && theirs.byName !== match.byName &&
+           String(match.byName).indexOf(theirs.byName) === -1){
+          match.byName = match.byName + ' and ' + theirs.byName;
+        }
+        if(theirs.ts && theirs.ts < match.ts) match.ts = theirs.ts;
+      } else {
+        var copy = JSON.parse(JSON.stringify(theirs));
+        copy.companyId = targetCo;
+        state.contacts.push(copy);
+        mineCts.push(copy);
+        ctMap[theirs.id] = copy.id;
+        addedCt++;
+      }
+    });
+
+    /* notes: ids come from different phones so they never collide — keep them all */
+    var haveNote = {};
+    state.notes.forEach(function(n){ haveNote[n.id] = 1; });
+    var addedN = 0;
+    (pay.notes || []).forEach(function(theirs){
+      if(haveNote[theirs.id]) return;
+      var copy = JSON.parse(JSON.stringify(theirs));
+      copy.companyId = coMap[theirs.companyId] || theirs.companyId;
+      if(copy.contactId) copy.contactId = ctMap[theirs.contactId] || theirs.contactId;
+      state.notes.push(copy);
+      addedN++;
+    });
+    state.notes.sort(function(a,b){ return b.ts - a.ts; });
+
+    state.activeId = id;
+    save();
+    closeExport();
+    paintEvent(); renderList(); go('s-list');
+
+    var bits = [];
+    bits.push(addedCt + (addedCt === 1 ? ' person' : ' people') + ' added');
+    if(dupCt) bits.push(dupCt + ' already had');
+    if(addedCo) bits.push(addedCo + (addedCo === 1 ? ' new company' : ' new companies'));
+    if(addedN) bits.push(addedN + (addedN === 1 ? ' note' : ' notes'));
+    mergeReport(pay.from, bits.join(' · '));
+  }
+
+  function mergeReport(from, line){
+    var who = (from && from.name) ? from.name : 'your colleague';
+    toast('Merged ' + who + '\u2019s day — ' + line);
+  }
+
   function exportName(){
     var ae = activeEvent(), d = new Date(), slug = (ae && ae.name ? ae.name : 'ibooth').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
     return slug + '-' + d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + '.csv';
@@ -3903,6 +4271,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   loadRules();
   loadAI();
   load();
+  loadMe();
   buildWave();
   if(activeEvent()) paintEvent();
   window.addEventListener('pagehide', function(){ stopCamera(); teardownAudio(); });
