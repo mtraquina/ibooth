@@ -92,11 +92,26 @@ Notes
   circle top right of the events list to change it.
 * TWO PEOPLE AT ONE STAND. There is still no server, so you cannot see
   each other live. What you can do:
-    1. One person sets the event up, then Event settings > Copy the event
-       code, and sends it over.
-    2. The other taps "Join a colleague's event" and pastes it. Both
-       phones now hold the SAME event id, which is what makes step 3
-       possible — without it the two days can never be lined up.
+    1. One person sets the event up. Event settings then shows a code
+       like MONEY2020EUR-9174-WYW3 — three groups you can read out across
+       a stand. Tap it to copy.
+         MONEY2020EUR  the event, so you can see what you are joining
+         9174          its number, fixed for life — this is what makes
+                       both phones the SAME event, and mergeable
+         WYW3          its settings: which MEDDIC fields are captured and
+                       which ways of capturing someone the scanner offers
+       The first two groups never change. The last one changes if the
+       organiser changes the settings, so a colleague joining later gets
+       the current set.
+       The letters avoid I, L, O and U, so nothing can be mistaken for 1,
+       0 or V, and a code typed wrong fails a checksum and is refused
+       rather than quietly creating a second, unmergeable event.
+    2. The other taps "Join a colleague's event" and types it in. Case
+       does not matter. Both phones now hold the SAME event, which is what
+       makes step 3 possible — without it the two days can never be lined
+       up. The joining phone names the event after the code; rename it if
+       you like, the code will not change.
+       Codes sent before this change — the long iBOOTH1: ones — still work.
     3. At the end of the day, one of you opens the leads list > export >
        "Save my day as a handover file" and sends the .ibooth.json.
     4. The other opens the same sheet and taps "Merge in a colleague's
@@ -125,6 +140,15 @@ Notes
   Add to Home Screen and open it from the icon: it then keeps its
   permissions like an installed app. On Android, Chrome remembers the
   answer for the site by itself.
+* IPHONE: THE BAR AT THE FOOT OF EVERY SCREEN. Safari lays a page out
+  against the tall viewport it would have if its own toolbar were hidden,
+  so the bottom of the app used to sit behind that toolbar — the panel
+  with "New event" and "Join a colleague's event" in it looked cut off and
+  could not be tapped or dismissed. A laptop has no toolbar, which is why
+  it only ever showed up on the phone. The app is now sized to the small
+  viewport, which always excludes the browser's own furniture.
+  Add to Home Screen and open it from the icon and there is no toolbar at
+  all, which is the nicest way to run it.
 * PANELS THAT SLIDE UP FROM THE BOTTOM — join an event, export, send to
   Salesforce — now have four ways out, because one was not enough: the X
   in the top right, pulling the panel down by its handle, the Escape key,

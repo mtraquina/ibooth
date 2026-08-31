@@ -27,7 +27,16 @@
   button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
   button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 
-  #app{position:fixed;inset:0;overflow:hidden;background:var(--bg);}
+  /* iOS Safari lays a position:fixed element out against the LARGE viewport —
+     the tall one you only get once the toolbar has scrolled away — and
+     viewport-fit=cover pushes it further under the browser's own furniture.
+     The result on a phone is that the bar at the foot of every screen, the one
+     with "New event" and "Join a colleague's event" in it, sits behind Safari's
+     toolbar: visible, cut off, and impossible to tap or dismiss. A laptop has
+     no toolbar, which is why it only ever showed up on the phone.
+     The small viewport unit is the one that always excludes that furniture. */
+  #app{position:fixed;left:0;right:0;top:0;bottom:0;overflow:hidden;background:var(--bg);}
+  @supports (height:100svh){ #app{height:100svh;bottom:auto;} }
   .screen{
     position:absolute;inset:0;display:flex;flex-direction:column;background:var(--bg);
     padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom);
@@ -190,12 +199,19 @@
   .fval{font-size:14.5px;line-height:1.42;}
   .fval.empty{color:var(--ink-4);font-style:italic;font-size:14px;}
 
+  /* A closed sheet is hidden TWICE: slid off the bottom, and made invisible
+     outright once it has finished sliding. The transform alone depends on the
+     containing block being what you think it is; visibility does not. */
   .sheet{position:absolute;left:0;right:0;bottom:0;z-index:118;background:var(--surface);border-top:1px solid var(--line-2);
     border-radius:24px 24px 0 0;padding:14px 20px calc(28px + env(safe-area-inset-bottom));
-    transform:translateY(100%);transition:transform .34s cubic-bezier(.32,.72,0,1);max-height:92%;overflow-y:auto;}
-  .sheet.on{transform:translateY(0);}
-  .scrim{position:absolute;inset:0;z-index:117;background:rgba(1,15,23,.6);opacity:0;transition:opacity .3s;pointer-events:none;}
-  .scrim.on{opacity:1;pointer-events:auto;}
+    transform:translateY(100%);max-height:92%;overflow-y:auto;
+    visibility:hidden;pointer-events:none;
+    transition:transform .34s cubic-bezier(.32,.72,0,1), visibility 0s linear .34s;}
+  .sheet.on{transform:translateY(0);visibility:visible;pointer-events:auto;
+    transition:transform .34s cubic-bezier(.32,.72,0,1), visibility 0s;}
+  .scrim{position:absolute;inset:0;z-index:117;background:rgba(1,15,23,.6);opacity:0;
+    visibility:hidden;pointer-events:none;transition:opacity .3s, visibility 0s linear .3s;}
+  .scrim.on{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .3s, visibility 0s;}
   .grab{width:38px;height:4px;border-radius:2px;background:var(--line-2);margin:0 auto;}
 
   /* The handle looked draggable and was not, which is how a sheet ends up
@@ -460,8 +476,11 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
 
         <div class="fld" id="ev-share-wrap" style="display:none;">
           <label>WORKING THIS STAND WITH SOMEONE ELSE</label>
-          <button type="button" class="btn ghost sm" onclick="shareEvent()">Copy the event code</button>
-          <span class="hint">Send it to your colleague and have them tap "Join a colleague's event". You both get the same event, which is what lets the two phones be merged later.</span>
+          <button type="button" id="ev-code" onclick="shareEvent()"
+            style="display:block;width:100%;text-align:center;background:var(--surface-2);border:1px dashed var(--line-2);
+                   border-radius:12px;padding:15px 12px;font-family:'IBM Plex Mono',monospace;font-size:19px;
+                   letter-spacing:.06em;color:var(--accent);">–</button>
+          <span class="hint">Read it out or send it over, and have them tap "Join a colleague's event". Tap to copy. You both get the same event, which is what lets the two phones be merged later.</span>
         </div>
         <div class="fld">
           <label for="ev-retain">DELETE AUDIO AFTER</label>
@@ -767,23 +786,27 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   <!-- ============ RULES ============ -->
 
 
+
+  <div class="scrim" id="join-scrim" onclick="closeJoin()"></div>
+  <div class="sheet" id="join-sheet">
+    <div class="grab"></div>
+    <h2 class="mid">Join a colleague's event</h2>
+    <p class="muted" style="font-size:13.5px;margin:5px 0 0;">Paste the code they sent you. You get the same event, set up identically — which is what lets the two phones be merged afterwards.</p>
+    <div class="col" style="gap:14px;margin-top:18px;">
+      <div class="fld">
+        <label for="join-code">EVENT CODE</label>
+        <input id="join-code" type="text" inputmode="latin" autocapitalize="characters" autocorrect="off" spellcheck="false"
+          placeholder="MONEY2020-4817-K3F2"
+          style="font-family:'IBM Plex Mono',monospace;font-size:17px;letter-spacing:.04em;text-transform:uppercase;">
+        <span class="hint">Three groups: the event, its number, and its settings. Older long codes still work if you have one.</span>
+      </div>
+      <button class="btn" onclick="doJoin()">Join it</button>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
 
-<div class="scrim" id="join-scrim" onclick="closeJoin()"></div>
-<div class="sheet" id="join-sheet">
-  <div class="grab"></div>
-  <h2 class="mid">Join a colleague's event</h2>
-  <p class="muted" style="font-size:13.5px;margin:5px 0 0;">Paste the code they sent you. You get the same event, set up identically — which is what lets the two phones be merged afterwards.</p>
-  <div class="col" style="gap:14px;margin-top:18px;">
-    <div class="fld">
-      <label for="join-code">EVENT CODE</label>
-      <textarea id="join-code" class="dictate" style="min-height:96px;font-family:'IBM Plex Mono',monospace;font-size:12px;" placeholder="iBOOTH1:…" spellcheck="false"></textarea>
-    </div>
-    <button class="btn" onclick="doJoin()">Join it</button>
-  </div>
-</div>
 
 <div id="pdf-veil" style="display:none;position:fixed;inset:0;z-index:126;background:rgba(1,15,23,.82);align-items:center;justify-content:center;flex-direction:column;gap:16px;">
   <div style="width:34px;height:34px;border:3px solid #14526E;border-top-color:#FF8300;border-radius:50%;animation:spin 1s linear infinite;"></div>
@@ -1030,6 +1053,11 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   }
 
   function wireSheets(){
+    /* Nothing is open when the app starts. Saying so out loud costs nothing,
+       and means no sheet can be inherited from a half-restored page. */
+    Array.prototype.forEach.call(document.querySelectorAll('.sheet, .scrim'), function(el){
+      el.classList.remove('on'); el.style.transform = ''; el.style.transition = '';
+    });
     SHEETS.forEach(function(s){
       var sh = document.getElementById(s.sheet);
       if(!sh || sh.dataset.wired) return;
@@ -1663,6 +1691,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     paintBadgeSources(); paintLanguages();
     checkWebsite();
     document.getElementById('ev-share-wrap').style.display = editing ? 'flex' : 'none';
+    if(editing) paintShareCode(e);
     /* an event being created has no rules yet — show the defaults it will get */
     useRulesOf(e || { rules: JSON.parse(JSON.stringify(
       (state.events[0] && state.events[0].rules) || legacyRules() || allRules())) });
@@ -1699,8 +1728,11 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     if(!name){ toast('The event needs a name'); document.getElementById('ev-name').focus(); return; }
     if(!badgeSources.length){ toast('Pick at least one way to capture someone'); return; }
     if(!checkWebsite()){ toast('Check the website address'); document.getElementById('ev-website').focus(); return; }
+    var was = editingId ? eventById(editingId) : null;
     var ev = {
       id: editingId || uid(),
+      slug: was ? was.slug : null,
+      key:  was ? was.key  : null,
       name: name,
       venue: document.getElementById('ev-venue').value.trim(),
       stand: document.getElementById('ev-stand').value.trim(),
@@ -1729,6 +1761,9 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     } else {
       state.events.unshift(ev);
     }
+    /* every event gets its short code the moment it exists, so the id and the
+       code can never disagree */
+    ensureShortId(ev);
     var backToLeads = settingsFrom === 'list';
     var cameFromList = settingsFrom === 'events';
     settingsFrom = null;
@@ -4063,9 +4098,10 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   window.shareEvent = function(){
     var e = briefEvent() || activeEvent();
     if(!e){ toast('Save the event first'); return; }
-    var payload = JSON.parse(JSON.stringify(e));
-    var code = 'iBOOTH1:' + b64encode(payload);
-    var done = function(){ toast('Code copied — send it to your colleague'); };
+    var code = eventCode(e);
+    save();                       /* the id may have just been settled */
+    paintShareCode();
+    var done = function(){ toast('Copied — ' + code); };
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(code).then(done).catch(function(){ showCode(code); });
     } else showCode(code);
@@ -4074,6 +4110,162 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     openEdit('EVENT CODE', code, true, function(){});
     toast('Copy this and send it to your colleague');
   }
+
+
+  /* ---------- the event code ----------
+     This used to be the whole event as base64 — four hundred characters of
+     gibberish that nobody could read out, retype, or trust had arrived intact.
+     It is now three groups you can say across a stand:
+
+         MONEY2020-4817-K3F2
+
+     the event, so you can see what you are joining;
+     its number, fixed for life, which is what makes both phones the SAME event
+       and therefore mergeable at the end of the day;
+     and its settings — which MEDDIC fields are captured and which ways of
+       capturing someone the scanner offers — so both phones collect the same
+       things. That last group changes if the organiser changes the settings;
+       the first two never do.
+
+     The letters are Crockford's alphabet: no I, no L, no O, no U, so nothing
+     can be confused with 1, 0 or V. Anything typed wrong fails a checksum and
+     is refused, rather than quietly creating a second, unmergeable event. */
+  var C32 = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+  var BADGE_ORDER = ['qr','api','card','manual'];
+
+  function slugOf(name){
+    var s = String(name || '').toUpperCase()
+      .replace(/&/g, 'AND')
+      .replace(/[^A-Z0-9]+/g, '')
+      .slice(0, 12);
+    return s || 'EVENT';
+  }
+  function freshKey(){ return String(1000 + Math.floor(Math.random() * 9000)); }
+  function idFromCode(slug, key){ return 'ev-' + slug + '-' + key; }
+
+  function b32(n, chars){
+    var out = '';
+    for(var i = 0; i < chars; i++){ out = C32.charAt(n & 31) + out; n = Math.floor(n / 32); }
+    return out;
+  }
+  function unb32(str){
+    var n = 0;
+    for(var i = 0; i < str.length; i++){
+      var v = C32.indexOf(str.charAt(i));
+      if(v < 0) return -1;
+      n = n * 32 + v;
+    }
+    return n;
+  }
+  function codeSum(str){
+    var h = 7;
+    for(var i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) & 255;
+    return h;
+  }
+
+  /* eight MEDDIC fields then four capture methods: twelve bits */
+  function packSettings(e){
+    var r = rulesFor(e), bits = 0;
+    MEDDIC.forEach(function(d){ bits = (bits << 1) | (r[d.k] ? 1 : 0); });
+    BADGE_ORDER.forEach(function(k){
+      bits = (bits << 1) | ((e.badgeSources || []).indexOf(k) > -1 ? 1 : 0);
+    });
+    return bits;
+  }
+  function unpackSettings(bits, e){
+    var badge = bits & 15, rules = bits >> 4;
+    e.badgeSources = [];
+    BADGE_ORDER.forEach(function(k, i){
+      if(badge & (1 << (BADGE_ORDER.length - 1 - i))) e.badgeSources.push(k);
+    });
+    if(!e.badgeSources.length) e.badgeSources = ['qr','card'];
+    e.rules = {};
+    MEDDIC.forEach(function(d, i){
+      e.rules[d.k] = !!(rules & (1 << (MEDDIC.length - 1 - i)));
+    });
+    return e;
+  }
+
+  /* An event's id is derived from its own code, so two phones that type the
+     same code arrive at the same id without ever having spoken to a server.
+     Older events were given a random id before this existed; the first time
+     one is shared it is moved across, taking whatever it has already captured
+     with it rather than orphaning it. */
+  function ensureShortId(e){
+    if(!e) return e;
+    if(!e.slug) e.slug = slugOf(e.name);
+    if(!e.key)  e.key  = freshKey();
+    var want = idFromCode(e.slug, e.key);
+    var clash = function(id){
+      for(var i = 0; i < state.events.length; i++)
+        if(state.events[i] !== e && state.events[i].id === id) return true;
+      return false;
+    };
+    var guard = 0;
+    while(clash(want) && guard++ < 50){ e.key = freshKey(); want = idFromCode(e.slug, e.key); }
+    if(e.id === want) return e;
+    var old = e.id;
+    [state.companies, state.contacts, state.notes].forEach(function(list){
+      list.forEach(function(r){ if(r.eventId === old) r.eventId = want; });
+    });
+    e.id = want;
+    if(state.activeId === old) state.activeId = want;
+    if(editingId === old) editingId = want;
+    return e;
+  }
+
+  window.eventCode = function(e){
+    ensureShortId(e);
+    var set = packSettings(e);
+    var body = e.slug + '-' + e.key + '-' + set;
+    return e.slug + '-' + e.key + '-' + b32((set << 8) | codeSum(body), 4);
+  };
+
+  function readShortCode(raw){
+    var t = String(raw || '').toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    var parts = t.split('-').filter(function(x){ return x.length; });
+    if(parts.length !== 3) return null;
+    var slug = parts[0], key = parts[1];
+    /* forgive the four letters people reliably mistype */
+    var tail = parts[2].replace(/[IL]/g, '1').replace(/O/g, '0').replace(/U/g, 'V');
+    if(!/^[A-Z0-9]{1,12}$/.test(slug) || !/^\d{4}$/.test(key) || tail.length !== 4) return null;
+    var n = unb32(tail);
+    if(n < 0) return null;
+    var set = n >> 8;
+    if(codeSum(slug + '-' + key + '-' + set) !== (n & 255)) return null;
+    var e = {
+      id: idFromCode(slug, key), slug: slug, key: key, name: slug,
+      venue:'', stand:'', website:'', region:'', start:'', end:'',
+      campaign:'', source:'Trade show', followup:3, retain:30,
+      languages:['English'], apiKey:''
+    };
+    return unpackSettings(set, e);
+  }
+
+  /* Codes sent before this change still work. */
+  function readAnyCode(raw){
+    var t = String(raw || '').trim();
+    if(!t) return null;
+    if(/^iBOOTH1:/i.test(t) || t.length > 60){
+      try{
+        var ev = b64decode(t.replace(/^iBOOTH1:/i, ''));
+        if(ev && ev.id && ev.name) return ev;
+      }catch(err){}
+      return null;
+    }
+    return readShortCode(t);
+  }
+
+  /* The code is on the settings page in full, big enough to read across a
+     stand. It is generated on sight rather than stored, so a change to the
+     event's settings is reflected the moment it is made. */
+  window.paintShareCode = function(e){
+    var el = document.getElementById('ev-code');
+    if(!el) return;
+    e = e || eventById(editingId) || activeEvent();
+    if(!e){ el.textContent = '–'; return; }
+    el.textContent = eventCode(e);
+  };
 
   window.openJoin = function(){
     document.getElementById('join-code').value = '';
@@ -4087,11 +4279,11 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   window.doJoin = function(){
     var raw = document.getElementById('join-code').value.trim();
     if(!raw){ toast('Paste the code first'); return; }
-    var ev;
-    try{
-      ev = b64decode(raw.replace(/^iBOOTH1:/, ''));
-      if(!ev || !ev.id || !ev.name) throw new Error('not an event');
-    }catch(err){ toast('That code did not read. Ask them to send it again.'); return; }
+    var ev = readAnyCode(raw);
+    if(!ev){
+      toast('That code did not read. It looks like MONEY2020-4817-K3F2.');
+      return;
+    }
 
     var existing = eventById(ev.id);
     if(existing){
@@ -4104,7 +4296,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     state.events.unshift(normaliseEvent(ev));
     state.activeId = ev.id;
     save(); closeJoin(); paintEvent(); renderEvents(); go('s-events');
-    toast('Joined ' + ev.name + ' — start scanning');
+    toast('Joined ' + ev.name + ' — rename it in settings if you like, the code will not change');
   };
 
   /* ---------- handover: one phone's whole event, for merging ---------- */
