@@ -246,7 +246,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
 </script>
 </head>
 <body>
-<script>window.IBOOTH_BUILD='2026-09-03 d71806';</script>
+<script>window.IBOOTH_BUILD='2026-09-03 ebad2e';</script>
 <div id="app">
 
   <!-- ============ SIGN IN ============ -->
@@ -331,16 +331,31 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   <span class="eyebrow">SALESFORCE ACCOUNT BOOK</span>
   <div class="col" style="gap:9px;margin-top:10px;">
     <p class="dim" id="sf-state" style="font-size:12.5px;line-height:1.5;margin:0;">No book loaded. Company history will be blank.</p>
-    <label class="btn ghost sm" style="cursor:pointer;flex-shrink:0;">
-      Load an account book
-      <!-- No accept filter on purpose. iOS greys out files whose type the
-           Files provider has not resolved, which is most things arriving from
-           Google Drive, and a rep sees a file they cannot tap with no reason
-           given. pickBook checks the contents instead, which is the only check
-           that was ever worth anything. -->
-      <input type="file" id="sf-file" style="display:none;" onchange="pickBook(this)">
-    </label>
-    <button class="btn ghost sm" id="sf-clear" style="flex-shrink:0;display:none;" onclick="clearBook()">Forget it now</button>
+    <button class="btn sm" id="sf-refresh" style="flex-shrink:0;" onclick="refreshBook()">Refresh the account book</button>
+    <div class="fld" id="sf-key-row" style="display:none;">
+      <label for="sf-key">TEAM KEY</label>
+      <input id="sf-key" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="the four words from your team lead">
+    </div>
+    <span class="hint" id="sf-refresh-hint">Downloads the newest book from wherever this app is published. Do it on hotel wifi the night before — the phone works with no signal after that.</span>
+    <details style="margin-top:2px;">
+      <summary class="dim" style="font-size:12.5px;cursor:pointer;padding:4px 0;">Other ways to load it</summary>
+      <div class="col" style="gap:9px;margin-top:10px;">
+        <label class="btn ghost sm" style="cursor:pointer;flex-shrink:0;">
+          Load from a file
+          <!-- No accept filter on purpose. iOS greys out files whose type the
+               Files provider has not resolved, which is most things arriving
+               from Google Drive, and a rep sees a file they cannot tap with no
+               reason given. pickBook checks the contents instead, which is the
+               only check that was ever worth anything. -->
+          <input type="file" id="sf-file" style="display:none;" onchange="pickBook(this)">
+        </label>
+        <div class="fld">
+          <label for="sf-url">OR A DIFFERENT ADDRESS</label>
+          <input id="sf-url" type="url" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="https://…/account-book.enc">
+        </div>
+        <button class="btn ghost sm" id="sf-clear" style="flex-shrink:0;display:none;" onclick="clearBook()">Forget the book on this phone</button>
+      </div>
+    </details>
     <span class="hint">Built from Salesforce before the show and carried on the phone, so prior deals show up at the stand with no signal. No contacts, no deal names and no values — the shape of the history and who owns it, nothing more. It clears itself the day after the event ends.</span>
   </div>
 
@@ -1489,6 +1504,162 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   window.clearBook = function(){
     forgetBook(); paintBook(); toast('Account book forgotten');
   };
+
+  /* ---------- refreshing the book over the wire ----------
+     Getting a 427 KB file onto five phones by hand does not work. Google Drive
+     on iOS previews a .json instead of handing it over and the Files provider
+     greys it out; AirDrop stops scaling at about three people. So the book is
+     published beside the app and fetched.
+
+     Published in the open, that would be iProov's entire account list on the
+     internet — GitHub Pages cannot restrict a site's visibility outside
+     Enterprise Cloud. So what is published is AES-256-GCM ciphertext and the
+     key is four words the team lead shares once. GCM is authenticated, so the
+     wrong key fails as the wrong key rather than as a corrupt file. */
+  var BOOK_URL = 'account-book.enc';
+  function bookUrl(){
+    try{ return localStorage.getItem('booth.sfurl') || BOOK_URL; }catch(e){ return BOOK_URL; }
+  }
+  function savedKey(){
+    try{ return localStorage.getItem('booth.sfkey') || ''; }catch(e){ return ''; }
+  }
+  function b64(s){
+    var bin = atob(s), out = new Uint8Array(bin.length);
+    for(var i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  function deriveKey(text, salt, iter){
+    return crypto.subtle.importKey('raw', new TextEncoder().encode(text),
+        { name:'PBKDF2' }, false, ['deriveKey'])
+      .then(function(base){
+        return crypto.subtle.deriveKey(
+          { name:'PBKDF2', salt:salt, iterations:iter, hash:'SHA-256' },
+          base, { name:'AES-GCM', length:256 }, false, ['decrypt']);
+      });
+  }
+
+  /* ---------- keeping it current without anybody thinking about it ----------
+     The book is rebuilt every Monday, and a rep should not have to know that.
+     On launch the app fetches a forty-byte stamp — build date and account
+     count, the same two things already in the clear inside the .enc — and only
+     pays for the 570 KB if the date has moved.
+
+     It stays quiet unless it succeeds. No key on this phone, no network, an
+     older stamp, a server that is not there: all of those mean do nothing,
+     because the book already on the phone still works and a rep on a stand
+     does not need to be told about a failed background check. */
+  var AUTO_EVERY = 12 * 3600 * 1000;
+  function autoRefresh(){
+    if(!window.crypto || !crypto.subtle) return;
+    var key = savedKey();
+    if(!key) return;                       /* never prompt from the background */
+    if(navigator.onLine === false) return;
+
+    var last = 0;
+    try{ last = +localStorage.getItem('booth.sfcheck') || 0; }catch(e){}
+    if(Date.now() - last < AUTO_EVERY) return;
+
+    var url = bookUrl(), stampUrl = url.replace(/\.enc(\?.*)?$/, '.stamp');
+    if(stampUrl === url) return;           /* a custom address we cannot guess */
+
+    /* stamp the attempt, not the success: a server that is down should be
+       tried again in twelve hours, not on every screen change */
+    try{ localStorage.setItem('booth.sfcheck', String(Date.now())); }catch(e){}
+
+    fetch(stampUrl, { cache:'no-store' }).then(function(r){
+      if(!r.ok) throw 0;
+      return r.json();
+    }).then(function(s){
+      if(!s || !s.built) throw 0;
+      if(sfBook && sfBook.built && s.built <= sfBook.built) return null;
+      return fetch(url, { cache:'no-store' }).then(function(r){
+        if(!r.ok) throw 0;
+        return r.json();
+      }).then(function(env){
+        if(!env.ct) throw 0;
+        return deriveKey(key, b64(env.salt), env.iter || 200000).then(function(k){
+          return crypto.subtle.decrypt({ name:'AES-GCM', iv:b64(env.iv) }, k, b64(env.ct));
+        });
+      }).then(function(plain){
+        if(importBook(new TextDecoder().decode(plain), 'the published book', true)) paintBook();
+      });
+    }).catch(function(){ /* deliberately silent */ });
+  }
+  window.autoRefresh = autoRefresh;
+
+  window.refreshBook = function(){
+    var btn = document.getElementById('sf-refresh');
+    var keyRow = document.getElementById('sf-key-row');
+    var typed = (document.getElementById('sf-key') || {}).value || '';
+    var url = ((document.getElementById('sf-url') || {}).value || '').trim() || bookUrl();
+
+    if(!window.crypto || !crypto.subtle){
+      /* file:// and plain http have no SubtleCrypto. The single-file build
+         opened straight off the phone is exactly that case. */
+      bookProblem('This copy of iBooth cannot decrypt anything — it is not being served over https. ' +
+        'Open the published address instead of a downloaded file, or load the book from a file.');
+      return;
+    }
+    if(btn){ btn.disabled = true; btn.textContent = 'Fetching…'; }
+    var done = function(){ if(btn){ btn.disabled = false; btn.textContent = 'Refresh the account book'; } };
+
+    fetch(url, { cache:'no-store' }).then(function(r){
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    }).then(function(text){
+      var env;
+      try{ env = JSON.parse(text); }catch(e){ throw new Error('not-a-book'); }
+
+      /* An unencrypted book at that address is fine — take it as it is. */
+      if(env.rows || env.accounts){
+        done();
+        if(importBook(text, 'the published book')) paintBook();
+        return null;
+      }
+      if(!env.ct || !env.salt || !env.iv) throw new Error('not-a-book');
+
+      var key = typed.trim() || savedKey();
+      if(!key){
+        done();
+        if(keyRow) keyRow.style.display = '';
+        var el = document.getElementById('sf-key'); if(el) el.focus();
+        bookProblem('Found a book from ' + (env.built || 'an unknown date') + ' with ' +
+          (env.n ? env.n.toLocaleString('en-GB') + ' accounts' : 'accounts in it') +
+          '. It is encrypted — enter the team key to open it.');
+        return null;
+      }
+      return deriveKey(key, b64(env.salt), env.iter || 200000).then(function(k){
+        return crypto.subtle.decrypt({ name:'AES-GCM', iv:b64(env.iv) }, k, b64(env.ct));
+      }).then(function(plain){
+        done();
+        if(importBook(new TextDecoder().decode(plain), 'the published book')){
+          try{
+            localStorage.setItem('booth.sfkey', key);
+            if(url !== BOOK_URL) localStorage.setItem('booth.sfurl', url);
+          }catch(e){}
+          if(keyRow) keyRow.style.display = 'none';
+          paintBook();
+        }
+      }).catch(function(){
+        /* GCM authenticates, so this is the key being wrong and nothing else */
+        done();
+        if(keyRow) keyRow.style.display = '';
+        bookProblem('That key does not open this book. It is four words, from whoever built it. ' +
+          'Check for a stray space or a capital letter.');
+      });
+    }).catch(function(e){
+      done();
+      if(e && e.message === 'not-a-book'){
+        bookProblem('There is something at that address, but it is not an account book.');
+      } else if(e && /HTTP 404/.test(e.message)){
+        bookProblem('No account book has been published next to this app yet. ' +
+          'Whoever deployed iBooth needs to put account-book.enc beside it.');
+      } else {
+        bookProblem('Could not reach the account book — no usable network. ' +
+          'Try on hotel wifi rather than the venue’s.');
+      }
+    });
+  };
   function paintBook(){
     var el = document.getElementById('sf-state');
     if(!el) return;
@@ -1498,6 +1669,10 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     el.style.color = st ? 'var(--good)' : '';
     var b = document.getElementById('sf-clear');
     if(b) b.style.display = st ? '' : 'none';
+    var u = document.getElementById('sf-url');
+    if(u && !u.value){ var saved = bookUrl(); if(saved !== BOOK_URL) u.value = saved; }
+    var k = document.getElementById('sf-key-row');
+    if(k && st) k.style.display = 'none';
     var s = document.getElementById('build-stamp');
     /* Two phones on one stand running different builds is invisible until it
        is not. Reading this out over the phone beats guessing from a photo. */
@@ -3297,7 +3472,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     var n = sfBook.count || (sfBook.accounts ? Object.keys(sfBook.accounts).length : 0);
     return n.toLocaleString('en-GB') + ' accounts · built ' + (sfBook.built || 'unknown');
   };
-  window.importBook = function(text, name){
+  window.importBook = function(text, name, quiet){
     var what = name ? '“' + name + '”' : 'That file';
     var b;
     try{ b = JSON.parse(text); }
@@ -3334,8 +3509,10 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     var n = 0;
     state.companies.forEach(function(co){ if(applyAccount(co)) n++; });
     save();
-    toast('Account book loaded — ' + (b.count || 0).toLocaleString('en-GB') +
-      ' accounts' + (n ? ', ' + n + ' matched' : ''));
+    toast(quiet
+      ? 'Account book updated — built ' + (b.built || 'unknown')
+      : 'Account book loaded — ' + (b.count || 0).toLocaleString('en-GB') +
+        ' accounts' + (n ? ', ' + n + ' matched' : ''));
     return true;
   };
 
@@ -5167,6 +5344,12 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   load();
   loadMe();
   loadBook();
+  /* after first paint, and again whenever the app is brought back — on a phone
+     that is what "opening it" means, since the tab is never really closed */
+  setTimeout(autoRefresh, 2500);
+  document.addEventListener('visibilitychange', function(){
+    if(!document.hidden) autoRefresh();
+  });
   wireSheets();
   buildWave();
   if(activeEvent()) paintEvent();
