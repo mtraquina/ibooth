@@ -246,6 +246,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
 </script>
 </head>
 <body>
+<script>window.IBOOTH_BUILD='2026-09-03 d71806';</script>
 <div id="app">
 
   <!-- ============ SIGN IN ============ -->
@@ -332,11 +333,18 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     <p class="dim" id="sf-state" style="font-size:12.5px;line-height:1.5;margin:0;">No book loaded. Company history will be blank.</p>
     <label class="btn ghost sm" style="cursor:pointer;flex-shrink:0;">
       Load an account book
-      <input type="file" accept=".json,application/json" id="sf-file" style="display:none;" onchange="pickBook(this)">
+      <!-- No accept filter on purpose. iOS greys out files whose type the
+           Files provider has not resolved, which is most things arriving from
+           Google Drive, and a rep sees a file they cannot tap with no reason
+           given. pickBook checks the contents instead, which is the only check
+           that was ever worth anything. -->
+      <input type="file" id="sf-file" style="display:none;" onchange="pickBook(this)">
     </label>
     <button class="btn ghost sm" id="sf-clear" style="flex-shrink:0;display:none;" onclick="clearBook()">Forget it now</button>
     <span class="hint">Built from Salesforce before the show and carried on the phone, so prior deals show up at the stand with no signal. No contacts, no deal names and no values — the shape of the history and who owns it, nothing more. It clears itself the day after the event ends.</span>
   </div>
+
+  <p class="dim" id="build-stamp" style="font-size:11px;margin:18px 0 0;text-align:center;opacity:.55;"></p>
 
       <div style="height:24px;"></div>
     </div>
@@ -1462,11 +1470,22 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     var f = input.files && input.files[0];
     if(!f) return;
     var r = new FileReader();
-    r.onload = function(){ if(importBook(String(r.result))) paintBook(); };
-    r.onerror = function(){ toast('That file could not be read'); };
+    /* only on success. paintBook() rewrites #sf-state from the book that is
+       loaded, so calling it after a failure wipes the message explaining the
+       failure — which is exactly what it did the first time this was written. */
+    r.onload = function(){ if(importBook(String(r.result), f.name)) paintBook(); };
+    r.onerror = function(){ bookProblem('“' + f.name + '” could not be read off the phone.'); };
     r.readAsText(f);
     input.value = '';
   };
+  /* A failure here used to be a toast that vanished in three seconds, which is
+     no use to a rep at a stand or to whoever they ring about it. It stays on
+     the screen until the next attempt. */
+  function bookProblem(msg){
+    var el = document.getElementById('sf-state');
+    if(el){ el.textContent = msg; el.style.color = 'var(--warn)'; }
+    toast('The account book did not load');
+  }
   window.clearBook = function(){
     forgetBook(); paintBook(); toast('Account book forgotten');
   };
@@ -1479,6 +1498,10 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     el.style.color = st ? 'var(--good)' : '';
     var b = document.getElementById('sf-clear');
     if(b) b.style.display = st ? '' : 'none';
+    var s = document.getElementById('build-stamp');
+    /* Two phones on one stand running different builds is invisible until it
+       is not. Reading this out over the phone beats guessing from a photo. */
+    if(s) s.textContent = 'iBooth build ' + (window.IBOOTH_BUILD || 'unknown');
   }
 
   window.openMe = function(){
@@ -3274,13 +3297,38 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     var n = sfBook.count || (sfBook.accounts ? Object.keys(sfBook.accounts).length : 0);
     return n.toLocaleString('en-GB') + ' accounts · built ' + (sfBook.built || 'unknown');
   };
-  window.importBook = function(text){
+  window.importBook = function(text, name){
+    var what = name ? '“' + name + '”' : 'That file';
     var b;
-    try{ b = JSON.parse(text); }catch(e){ toast('That is not a readable account book'); return false; }
+    try{ b = JSON.parse(text); }
+    catch(e){
+      bookProblem(what + ' is not an account book — it is not even readable as JSON. ' +
+        'Check you picked account-book.json and not a spreadsheet or a PDF.');
+      return false;
+    }
+    if(b && b.v && b.v > 2){
+      /* the format moved on and this phone did not. Say so, rather than
+         "no accounts in it", which sends everybody looking at the file. */
+      bookProblem(what + ' was built for a newer version of iBooth (format ' + b.v +
+        ', this app reads 2). Reinstall the app from the current link, then load it again.');
+      return false;
+    }
     b = decodeBook(b);
-    if(!b || !(b.map || b.accounts)){ toast('That file has no accounts in it'); return false; }
+    /* an empty object decodes to an empty map, which is truthy. Count, not
+       existence: a book with no accounts in it is not a book. */
+    var n = b ? (b.count || (b.accounts ? Object.keys(b.accounts).length : 0)) : 0;
+    if(!n){
+      bookProblem(what + ' is JSON, but there are no accounts in it. ' +
+        'It should be the account-book.json built from Salesforce.');
+      return false;
+    }
     try{ localStorage.setItem('booth.sf', text); }
-    catch(e){ toast('Too large for this phone'); return false; }
+    catch(e){
+      bookProblem('There is no room on this phone for the account book (' +
+        Math.round(text.length / 1024) + ' KB). Export and close an old event to make space, ' +
+        'or use a book built with --thick-only.');
+      return false;
+    }
     sfBook = b;
     /* anything already scanned can be filled in straight away */
     var n = 0;
