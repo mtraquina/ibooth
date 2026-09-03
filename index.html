@@ -326,6 +326,18 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
 
   
 
+  <div style="height:1px;background:var(--line);margin:20px 0 16px;"></div>
+  <span class="eyebrow">SALESFORCE ACCOUNT BOOK</span>
+  <div class="col" style="gap:9px;margin-top:10px;">
+    <p class="dim" id="sf-state" style="font-size:12.5px;line-height:1.5;margin:0;">No book loaded. Company history will be blank.</p>
+    <label class="btn ghost sm" style="cursor:pointer;flex-shrink:0;">
+      Load an account book
+      <input type="file" accept=".json,application/json" id="sf-file" style="display:none;" onchange="pickBook(this)">
+    </label>
+    <button class="btn ghost sm" id="sf-clear" style="flex-shrink:0;display:none;" onclick="clearBook()">Forget it now</button>
+    <span class="hint">Built from Salesforce before the show and carried on the phone, so prior deals show up at the stand with no signal. No contacts, no deal names and no values — the shape of the history and who owns it, nothing more. It clears itself the day after the event ends.</span>
+  </div>
+
       <div style="height:24px;"></div>
     </div>
     <div class="pad safe-b" style="padding-top:12px;border-top:1px solid var(--line);">
@@ -418,6 +430,11 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
             <button type="button" data-region="APAC">APAC</button>
           </div>
         </div>
+        <div class="fld">
+          <label for="ev-country">COUNTRY</label>
+          <input id="ev-country" placeholder="Netherlands" autocomplete="off">
+          <span class="hint">Where the show is. Used for every lead unless Salesforce knows better for that company.</span>
+        </div>
 
         <div style="height:1px;background:var(--line);margin:4px 0;"></div>
         <span class="eyebrow">WHERE THE LEADS GO</span>
@@ -427,9 +444,26 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
           <input id="ev-campaign" placeholder="M20/20 EU 2026" autocomplete="off">
           <span class="hint">Every contact becomes a campaign member — this is how marketing attributes pipeline to the show.</span>
         </div>
+        <div class="fld">
+          <label for="ev-owner">CONTACT OWNER</label>
+          <select id="ev-owner"></select>
+          <span class="hint">Who owns leads from this show. A company already in Salesforce uses its own account owner instead.</span>
+        </div>
         <div class="two">
-          <div class="fld"><label for="ev-source">LEAD SOURCE</label><input id="ev-source" placeholder="Trade show" autocomplete="off"></div>
+          <div class="fld">
+            <label for="ev-status">CAMPAIGN MEMBER STATUS</label>
+            <select id="ev-status"></select>
+            <span class="hint">The default for every scan; correctable per person.</span>
+          </div>
           <div class="fld"><label for="ev-followup">FOLLOW UP IN</label><input id="ev-followup" type="number" min="1" max="30" value="3"><span class="hint">days</span></div>
+        </div>
+        <div class="fld">
+          <label>MARKETING OPT-IN</label>
+          <div class="seg" id="ev-optin">
+            <button type="button" data-optin="1" class="on">Opted in by default</button>
+            <button type="button" data-optin="0">Not opted in</button>
+          </div>
+          <span class="hint">What the export claims for each person. Set it to match what the badge terms at this show actually say, and correct anyone who asks not to be contacted.</span>
         </div>
 
         <div style="height:1px;background:var(--line);margin:4px 0;"></div>
@@ -1306,6 +1340,68 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     return base.charAt(0).toUpperCase() + base.slice(1);
   }
 
+
+  /* ---------- the Marketo lead upload template ----------
+     The export used to be shaped for a human reading a spreadsheet. It is now
+     shaped for the upload template, whose dropdowns are enforced on import — a
+     value that is not in the list is rejected — so these lists were read out of
+     the workbook's own data validation rather than retyped from memory. */
+  var TPL_INDUSTRY = ['Banking','Investment Services','Insurance','Government','Education',
+    'Communications and Media','Business and Consumer Services','Information Technology',
+    'Healthcare','Manufacturing','Utilities','Retail','Transportation','Other'];
+
+  /* The seven of the template's twenty-two that can genuinely happen at a stand.
+     Spelled EXACTLY as the workbook's dropdown spells them — "Visited booth"
+     has a lower-case b there and a capital B in Salesforce's own CampaignMember
+     status, and the import validates against the workbook. Do not tidy these. */
+  var TPL_STATUS = ['Invited','Meeting Requested','No Show','Attended',
+    'Visited booth','Held Meeting','Attended workshop'];
+  var TPL_STATUS_DEFAULT = 'Visited booth';
+
+  var TPL_LEAD_SOURCE = 'Event / Trade Show';   /* the only valid value for a show */
+
+  var TPL_OWNERS = ['Demand Gen','Shaun Bowman','James Leigh','Kristine Messenger','Milko Radotic',
+    'Omar Sanjuanero','Laura Armour','Eduardo Montellano','Renato De Andrade','Daniel Rock',
+    'Leo Curran','Henry Walsh','Vit Bruner','Ajay Amlani','Matthew Pearch','Adam Grayson',
+    'Dan Molina','Mike Summers','Jeroen Schreuders','Joanne Coughlan','Irma Vasiliauskaite',
+    'Jeremy Saal','Joy To','Amina Dashdorj','Erik Baardse','Louis Frost','Leigh Day',
+    'Anna Johansson','James Noonan','Gus Frankwicz','Caroline McAlinden',"Bridget O'Brien",
+    'Riley Bodoin','Jeffrey Johnson'];
+
+  /* A badge gives one string; the template wants two columns. The split has to
+     be visible and correctable, because no rule gets "van der Berg" and
+     "Maria del Carmen Ruiz Gomez" both right. The last word is the surname
+     unless a particle marks where the surname starts. */
+  var NAME_PARTICLES = ['van','von','de','del','della','der','den','di','da','dos','das',
+    'la','le','du','st','st.','mac','mc','bin','ibn','al','ter','ten'];
+  window.splitName = function(full){
+    var t = String(full || '').trim().replace(/\s+/g, ' ');
+    if(!t) return { first:'', last:'' };
+    var parts = t.split(' ');
+    if(parts.length === 1) return { first:'', last:parts[0] };
+    var i = parts.length - 1;
+    while(i > 1 && NAME_PARTICLES.indexOf(parts[i-1].toLowerCase()) > -1) i--;
+    return { first: parts.slice(0, i).join(' '), last: parts.slice(i).join(' ') };
+  };
+  function fullName(ct){
+    if(!ct) return '';
+    var f = String(ct.firstName || '').trim(), l = String(ct.lastName || '').trim();
+    if(f || l) return (f + ' ' + l).trim();
+    return ct.name || '';
+  }
+  /* records made before the split existed, and anything arriving in a
+     colleague's handover file */
+  function ensureSplit(ct){
+    if(!ct) return ct;
+    if(ct.firstName === undefined && ct.lastName === undefined){
+      var sp = splitName(ct.name);
+      ct.firstName = sp.first; ct.lastName = sp.last;
+    }
+    if(ct.optIn === undefined) ct.optIn = true;
+    if(!ct.memberStatus) ct.memberStatus = TPL_STATUS_DEFAULT;
+    return ct;
+  }
+
   function findOrCreateCompany(ct){
     var dom = domainOf(ct.email), c = null, i;
     var pool = evCompanies();
@@ -1318,10 +1414,16 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       c = {
         id: uid(), eventId: state.activeId,
         name: (ct.company && ct.company !== '—') ? ct.company : (dom ? prettyFromDomain(dom) : 'Unknown company'),
-        domain: dom, edited:{}, sent:false, heatOverride:null, enriched:null
+        domain: dom, edited:{}, sent:false, heatOverride:null, enriched:null,
+        /* the template needs both; filled from Salesforce when the domain is
+           known there, otherwise left blank rather than guessed */
+        industry: '', country: '', sfName: null, sfOwner: null
       };
       state.companies.unshift(c);
     } else if(dom && !c.domain){ c.domain = dom; }
+    /* if the book knows this domain, the export's Industry, Country and
+       Contact Owner are answered without asking anybody at the stand */
+    applyAccount(c);
     return c;
   }
 
@@ -1355,6 +1457,30 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   }
   function meLabel(){ return me.name || me.email || 'Unknown'; }
 
+
+  window.pickBook = function(input){
+    var f = input.files && input.files[0];
+    if(!f) return;
+    var r = new FileReader();
+    r.onload = function(){ if(importBook(String(r.result))) paintBook(); };
+    r.onerror = function(){ toast('That file could not be read'); };
+    r.readAsText(f);
+    input.value = '';
+  };
+  window.clearBook = function(){
+    forgetBook(); paintBook(); toast('Account book forgotten');
+  };
+  function paintBook(){
+    var el = document.getElementById('sf-state');
+    if(!el) return;
+    if(!sfBook) loadBook();
+    var st = bookStamp();
+    el.textContent = st ? ('Loaded — ' + st + '.') : 'No book loaded. Company history will be blank.';
+    el.style.color = st ? 'var(--good)' : '';
+    var b = document.getElementById('sf-clear');
+    if(b) b.style.display = st ? '' : 'none';
+  }
+
   window.openMe = function(){
     var known = !!me.email;
     /* first run is a step in signing up; later it is an edit you can back out of */
@@ -1365,6 +1491,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     document.getElementById('me-name').value = me.name;
     document.getElementById('me-email').value = me.email;
     paintAI();          // the key section lives here now, so paint it on open
+    paintBook();
     go('s-me');
     setTimeout(function(){ document.getElementById('me-name').focus(); }, 250);
   };
@@ -1680,12 +1807,18 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     document.getElementById('ev-start').value = e ? e.start : iso(d);
     document.getElementById('ev-end').value = e ? e.end : iso(new Date(d.getTime() + 2*864e5));
     document.getElementById('ev-campaign').value = e ? e.campaign : '';
-    document.getElementById('ev-source').value = e ? e.source : 'Trade show';
+
     document.getElementById('ev-followup').value = e ? e.followup : 3;
     document.getElementById('ev-retain').value = e ? e.retain : 30;
     document.getElementById('ev-key').value = e ? (e.apiKey || '') : '';
     region = (e && e.region) ? e.region : 'EMEA';
     paintRegion();
+    fillTemplateSelects();
+    document.getElementById('ev-country').value = e ? (e.country || '') : '';
+    document.getElementById('ev-owner').value   = e ? (e.owner || '') : '';
+    document.getElementById('ev-status').value  = (e && e.memberStatus) ? e.memberStatus : TPL_STATUS_DEFAULT;
+    evOptIn = (e && e.optIn === false) ? false : true;
+    paintOptIn();
     badgeSources = (e && e.badgeSources && e.badgeSources.length) ? e.badgeSources.slice() : ['qr','card'];
     languages = (e && e.languages && e.languages.length) ? e.languages.slice() : ['English'];
     paintBadgeSources(); paintLanguages();
@@ -1723,6 +1856,17 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     if(e.key === 'Enter'){ e.preventDefault(); addLanguage(); }
   });
 
+
+  var evOptIn = true;
+  function paintOptIn(){
+    Array.prototype.forEach.call(document.querySelectorAll('#ev-optin button'), function(b){
+      b.classList.toggle('on', (b.dataset.optin === '1') === evOptIn);
+    });
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('#ev-optin button'), function(b){
+    b.addEventListener('click', function(e){ e.preventDefault(); evOptIn = b.dataset.optin === '1'; paintOptIn(); });
+  });
+
   window.saveEvent = function(){
     var name = document.getElementById('ev-name').value.trim();
     if(!name){ toast('The event needs a name'); document.getElementById('ev-name').focus(); return; }
@@ -1741,7 +1885,12 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       start: document.getElementById('ev-start').value,
       end: document.getElementById('ev-end').value,
       campaign: document.getElementById('ev-campaign').value.trim(),
-      source: document.getElementById('ev-source').value.trim() || 'Trade show',
+      country: document.getElementById('ev-country').value.trim(),
+      owner: document.getElementById('ev-owner').value,
+      memberStatus: document.getElementById('ev-status').value || TPL_STATUS_DEFAULT,
+      optIn: evOptIn,
+      /* the upload template allows exactly one lead source for a show */
+      source: TPL_LEAD_SOURCE,
       followup: parseInt(document.getElementById('ev-followup').value, 10) || 3,
       badgeSources: badgeSources.slice(),
       apiKey: document.getElementById('ev-key').value.trim(),
@@ -2226,22 +2375,59 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   };
 
   /* ---------- adding a contact: the fast path ---------- */
-  function addContact(p){
+  window.addContact = function(p){
+    var nm = splitName(p.name);
+    var ev0 = activeEvent() || {};
     var ct = {
-      id: uid(), eventId: state.activeId, name: p.name, title: p.title || '—', company: p.company || '—',
+      id: uid(), eventId: state.activeId, name: p.name,
+      firstName: nm.first, lastName: nm.last,
+      title: p.title || '—', company: p.company || '—',
       email: p.email || '—', phone: p.phone || '', source: p.source, ts: Date.now(),
+      /* the template wants both of these on every row; they default from the
+         event so a scan stays one tap, and are correctable per person after */
+      memberStatus: ev0.memberStatus || TPL_STATUS_DEFAULT,
+      optIn: ev0.optIn === false ? false : true,
       by: me.email || 'unknown', byName: meLabel()
     };
     var co = findOrCreateCompany(ct);
     ct.companyId = co.id;
     if((!co.name || co.name === 'Unknown company') && ct.company !== '—') co.name = ct.company;
+
+    /* The same badge gets scanned twice all the time — a second rep reaches
+       for the same lanyard, or you simply cannot remember. Matching here on
+       the same rules the merge uses means a re-scan tops the record up
+       instead of creating a second person, which downstream would become a
+       duplicate lead in the CRM and a duplicate follow-up email. */
+    var dup = null;
+    evContacts().forEach(function(c){
+      if(dup) return;
+      if(realEmail(ct.email) && realEmail(c.email) && norm(ct.email) === norm(c.email)) dup = c;
+      else if(!realEmail(ct.email) && !realEmail(c.email) &&
+              norm(ct.name) && norm(ct.name) === norm(c.name) && c.companyId === co.id) dup = c;
+    });
+    if(dup){
+      ['title','email','phone'].forEach(function(k){
+        var cur = String(dup[k] || '').trim();
+        if((!cur || cur === '—') && ct[k] && ct[k] !== '—') dup[k] = ct[k];
+      });
+      if(ct.byName && dup.byName && ct.byName !== dup.byName &&
+         String(dup.byName).indexOf(ct.byName) === -1){
+        dup.byName = dup.byName + ' and ' + ct.byName;
+      }
+      lastCompanyId = co.id; window.lastCompanyId = co.id;
+      save();
+      paintScanCount(); paintGroupBar();
+      toast('<b>' + esc(dup.name) + '</b> was already scanned — record kept, not duplicated');
+      return;
+    }
+
     state.contacts.unshift(ct);
     lastCompanyId = co.id; window.lastCompanyId = co.id;
     save();
     paintScanCount(); paintGroupBar();
     var n = contactsOf(co.id).length;
     toast('<b>' + esc(ct.name) + '</b> added to ' + esc(co.name) + (n > 1 ? ' · ' + n + ' people' : ''));
-  }
+  };
 
   function paintScanCount(){ document.getElementById('scan-count').textContent = evContacts().length; }
   function paintGroupBar(){
@@ -3019,48 +3205,233 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
 
   /* ---------- CRM tab: Salesforce + Apollo ---------- */
   function pseudo(seed){ var h=0; for(var i=0;i<seed.length;i++){ h=(h*31+seed.charCodeAt(i))>>>0; } return h; }
-  function sfLookup(co){
-    var key = co.domain || normName(co.name);
-    var h = pseudo(key), known = (h % 3) !== 0;
-    if(!known) return { known:false };
-    var owners = ['Elena Kovač','Liam Reyes','Marc Bouchard','Nadia Haddad'];
-    return {
-      known: true,
-      owner: owners[h % owners.length],
-      opps: (h >> 3) % 3,
-      lastOpp: ['Closed lost · Feb 2026','Closed won · Sep 2025','None recorded'][(h >> 5) % 3],
-      contacts: 1 + ((h >> 7) % 6),
-      cases: (h >> 9) % 2
-    };
+  /* ---------- the account book ----------
+     A static page holds no Salesforce credentials and cannot call the API, so
+     the account history is carried rather than fetched: a book is produced from
+     Salesforce before the show and loaded onto the phone once. That is not only
+     a workaround for the missing server — a stand often has no signal, and a
+     book already on the phone answers instantly.
+
+     Keyed on the whole registrable domain and looked up by EQUALITY. Matching
+     on "contains" is what made Website LIKE '%ubs.com%' return verihubs.com. */
+  var sfBook = null;
+
+  /* The rows arrive as one tab-separated string rather than as objects. Nine
+     thousand accounts of {"name":…,"owner":…} is four times the size for the
+     same information, and the owner and industry names repeat so heavily that
+     they are interned into short lists and referenced by position. Decoding is
+     one pass at load; lookups after that are a plain object hit. */
+  var COLS = ['dom','name','_o','_i','_c','stand','counts','types','prods','_u','last','inf'];
+  function decodeBook(b){
+    if(!b) return null;
+    if(b.accounts && !b.rows) return b;           /* a v1 book still reads */
+    var map = {}, lines = String(b.rows || '').split('\n'), n = 0;
+    for(var i = 0; i < lines.length; i++){
+      if(!lines[i]) continue;
+      var f = lines[i].split('\t'), a = {};
+      for(var j = 0; j < COLS.length; j++) a[COLS[j]] = f[j] || '';
+      if(!a.dom) continue;
+      a.owner = b.own[+a._o] || '';
+      a.ind   = b.ind[+a._i] || '';
+      a.country = b.cty[+a._c] || '';
+      a.use = a._u ? a._u.split(',').map(function(k){ return b.use[+k]; }).filter(Boolean) : [];
+      a.inferred = a.inf === '1';
+      var c = (a.counts || '0.0.0').split('.');
+      a.open = +c[0] || 0; a.won = +c[1] || 0; a.lost = +c[2] || 0;
+      a.stand = +a.stand || 0;
+      map[a.dom] = a; n++;
+    }
+    b.map = map; b.count = n;
+    return b;
   }
+  function loadBook(){
+    try{ sfBook = decodeBook(JSON.parse(localStorage.getItem('booth.sf'))); }
+    catch(e){ sfBook = null; }
+    if(sfBook && bookExpired()) forgetBook();
+    return sfBook;
+  }
+  /* A book is a slice of the CRM sitting in a browser. It should not outlive
+     the reason it was loaded, so it goes the day after the event ends and
+     again when the leads are exported, whichever comes first. */
+  function bookExpired(){
+    var e = state.events.filter(function(x){ return x.end; })
+                        .sort(function(p, q){ return p.end < q.end ? 1 : -1; })[0];
+    if(!e) return false;
+    var gone = new Date(e.end + 'T00:00:00');
+    gone.setDate(gone.getDate() + 1);
+    return new Date() > gone;
+  }
+  function forgetBook(){
+    try{ localStorage.removeItem('booth.sf'); }catch(e){}
+    sfBook = null;
+  }
+  window.forgetBook = forgetBook;
+  /* re-read from storage without wiping it, so the expiry rule can be tested
+     the way it actually runs: on a cold start of the app */
+  window.reloadBook = function(){ sfBook = null; return !!loadBook(); };
+  window.bookStamp = function(){
+    if(!sfBook) return null;
+    var n = sfBook.count || (sfBook.accounts ? Object.keys(sfBook.accounts).length : 0);
+    return n.toLocaleString('en-GB') + ' accounts · built ' + (sfBook.built || 'unknown');
+  };
+  window.importBook = function(text){
+    var b;
+    try{ b = JSON.parse(text); }catch(e){ toast('That is not a readable account book'); return false; }
+    b = decodeBook(b);
+    if(!b || !(b.map || b.accounts)){ toast('That file has no accounts in it'); return false; }
+    try{ localStorage.setItem('booth.sf', text); }
+    catch(e){ toast('Too large for this phone'); return false; }
+    sfBook = b;
+    /* anything already scanned can be filled in straight away */
+    var n = 0;
+    state.companies.forEach(function(co){ if(applyAccount(co)) n++; });
+    save();
+    toast('Account book loaded — ' + (b.count || 0).toLocaleString('en-GB') +
+      ' accounts' + (n ? ', ' + n + ' matched' : ''));
+    return true;
+  };
+
+  function registrable(x){
+    var t = String(x || '').trim().toLowerCase();
+    t = t.replace(/^[a-z]+:\/\//, '').split('/')[0].split('?')[0];
+    if(t.indexOf('www.') === 0) t = t.slice(4);
+    return t;
+  }
+  function sfLookup(co){
+    if(!sfBook) loadBook();
+    if(!sfBook || !co) return { known:false };
+    var d = registrable(co.domain);
+    if(!d) return { known:false };
+    var a = (sfBook.map || sfBook.accounts || {})[d];
+    return a ? Object.assign({ known:true, domain:d }, a) : { known:false, domain:d };
+  }
+  /* the export needs industry, country and owner; when the book knows the
+     account they come from Salesforce rather than from a guess at the stand */
+  function applyAccount(co){
+    var a = sfLookup(co);
+    if(!a.known) return false;
+    co.sfName = a.name; co.sfOwner = a.owner;
+    if(!co.industry) co.industry = a.ind || '';
+    if(!co.country)  co.country  = a.country || '';
+    return true;
+  }
+  window.applyAccount = applyAccount;
+
+  /* money() and shortDate() lived here to print deal values and close dates.
+     The book no longer carries either, so they went with them. */
+
+  /* one line that says what a rep needs before they open their mouth */
+  function standing(a){
+    if(a.stand === 3 || a.open) return { t:'Live deal in play', c:'var(--warn)' };
+    if(a.stand === 2 || a.won)  return { t:'Existing customer',  c:'var(--good)' };
+    if(a.stand === 1 || a.lost) return { t:'Lost before',        c:'var(--ink-2)' };
+    return { t:'On file, no deals', c:'var(--ink-2)' };
+  }
+
+  /* Opportunity.Type, aggregated. It is the only field on the object that is
+     filled every single time, and summed across an account it says more than
+     any of the product picklists: "3 renewals, 1 expansion" is an embedded
+     customer; "4 new, all lost" is four failed attempts to get in. */
+  var TYPE_WORD = { N:['new deal','new deals'], R:['renewal','renewals'],
+                    E:['expansion','expansions'], C:['cross-sell','cross-sells'],
+                    P:['proof of concept','proofs of concept'],
+                    U:['upsell','upsells'], F:['free PoC','free PoCs'] };
+  function typePhrase(types){
+    var all = [], m, re = /([NRECPUF])(\d+)/g;
+    while((m = re.exec(types || ''))){
+      var w = TYPE_WORD[m[1]];
+      if(w) all.push({ n:+m[2], w:w });
+    }
+    if(!all.length) return '';
+    /* UBS has six kinds of deal across twenty-eight opportunities. Reading all
+       six on a phone is worse than reading the three that dominate. */
+    all.sort(function(a, b){ return b.n - a.n; });
+    var rest = all.slice(3).reduce(function(t, x){ return t + x.n; }, 0);
+    var out = all.slice(0, 3).map(function(x){ return x.n + ' ' + x.w[x.n === 1 ? 0 : 1]; });
+    if(rest) out.push(rest + ' other' + (rest === 1 ? '' : 's'));
+    if(out.length === 1) return out[0];
+    return out.slice(0, -1).join(', ') + ' and ' + out[out.length - 1];
+  }
+  function monthYear(ym){
+    if(!ym) return '';
+    var d = new Date(ym + '-01T00:00:00');
+    return isNaN(d) ? ym : d.toLocaleDateString('en-GB', { month:'short', year:'numeric' });
+  }
+
   function renderCRM(body, co){
     var wrap = document.createElement('div'); wrap.className='col'; wrap.style.gap='12px';
-    var sf = sfLookup(co);
+    var a = sfLookup(co);
 
     var head = document.createElement('div');
-    head.style.cssText = 'display:flex;align-items:center;gap:9px;';
+    head.style.cssText = 'display:flex;align-items:center;gap:9px;flex-wrap:wrap;';
     head.innerHTML = '<span class="eyebrow">SALESFORCE</span>' +
-      '<span class="dim" style="font-size:11px;">matched on ' + (co.domain ? esc(co.domain) : 'company name') + '</span>';
+      '<span class="dim" style="font-size:11px;">' +
+      (a.domain ? 'matched on ' + esc(a.domain) : 'no domain to match on') + '</span>';
     wrap.appendChild(head);
+
+    if(!sfBook){
+      var none = document.createElement('div');
+      none.className = 'card'; none.style.cssText = 'padding:15px;';
+      none.innerHTML = '<div style="font-size:15px;font-weight:600;margin-bottom:7px;">No account book on this phone</div>' +
+        '<p style="margin:0;font-size:14px;line-height:1.55;color:var(--ink-2);">Load one from the circle at the top right of the events list. It is built from Salesforce before the show, so this works with no signal.</p>';
+      wrap.appendChild(none); body.appendChild(wrap); return;
+    }
 
     var card = document.createElement('div');
     card.className = 'card'; card.style.cssText = 'padding:15px;';
-    if(sf.known){
+
+    if(a.known){
+      var st = standing(a);
+      var hasHistory = a.open || a.won || a.lost;
       card.innerHTML =
-        '<div style="display:flex;align-items:center;gap:9px;margin-bottom:12px;">'+
-          '<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="#3DD68C" stroke-width="1.4"/><path d="M6.6 10.2l2.4 2.4L13.6 8" stroke="#3DD68C" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>'+
-          '<span style="font-size:15px;font-weight:600;color:var(--good);">We already know them</span>'+
+        '<div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:4px;">'+
+          '<span style="font-size:16px;font-weight:600;color:'+st.c+';">'+esc(st.t)+'</span>'+
         '</div>'+
-        row('Account owner', sf.owner) +
-        row('Open opportunities', sf.opps ? String(sf.opps) : 'none') +
-        row('Last opportunity', sf.lastOpp) +
-        row('Contacts on file', String(sf.contacts)) +
-        row('Open support cases', sf.cases ? String(sf.cases) : 'none');
-      if(sf.opps){
+        '<div class="dim" style="font-size:12.5px;margin-bottom:'+(hasHistory ? '12px' : '0')+';">'+esc(a.name)+
+          (a.country ? ' · ' + esc(a.country) : '') + (a.ind ? ' · ' + esc(a.ind) : '') + '</div>' +
+        (hasHistory ? (
+          row('Account owner', a.owner || '—') +
+          row('History', typePhrase(a.types) || (a.open + a.won + a.lost) + ' opportunities') +
+          row('Open now', a.open ? String(a.open) : 'none') +
+          row('Won / lost', a.won + ' / ' + a.lost) +
+          (a.prods ? row('Also sold', a.prods.split(';').join(', ')) : '') +
+          row('Last activity', monthYear(a.last) || 'none recorded')
+        ) : '');
+
+      /* An inferred label is a reading of the deal names, not a Salesforce
+         field. It is worth showing and it must never be dressed up as fact. */
+      if(a.use && a.use.length){
+        var u = document.createElement('div');
+        u.style.cssText = 'margin-top:12px;padding:11px 12px;border-radius:10px;background:var(--bg-2);font-size:13px;line-height:1.55;';
+        u.innerHTML = '<span style="font-weight:600;">' + esc(a.use.join(' · ')) + '</span>' +
+          '<span class="dim"> — ' + (a.inferred
+            ? 'read from the names of the past deals, not a Salesforce field'
+            : 'from the Use Case field in Salesforce') + '</span>';
+        card.appendChild(u);
+      }
+
+      if(a.open){
         var w = document.createElement('div');
         w.style.cssText = 'margin-top:12px;padding:11px 12px;border-radius:10px;background:rgba(254,179,6,.09);border:1px solid rgba(254,179,6,.25);font-size:13px;line-height:1.5;color:var(--warn);';
-        w.textContent = 'There is a live deal here. Talk to ' + sf.owner + ' before promising anything.';
+        w.textContent = a.open + (a.open === 1 ? ' deal is' : ' deals are') +
+          ' already open here. Talk to ' + (a.owner || 'the account owner') +
+          ' before promising anything.';
         card.appendChild(w);
+      } else if(a.lost && !a.won){
+        var l = document.createElement('div');
+        l.style.cssText = 'margin-top:12px;padding:11px 12px;border-radius:10px;background:var(--bg-2);font-size:13px;line-height:1.5;color:var(--ink-2);';
+        l.textContent = 'We have been here ' + (a.lost === 1 ? 'once' : a.lost + ' times') +
+          ' and never won. Worth asking what changed rather than pitching cold.';
+        card.appendChild(l);
+      }
+      wrap.appendChild(card);
+
+      if(hasHistory){
+        var note = document.createElement('p');
+        note.className = 'dim'; note.style.cssText = 'font-size:11.5px;line-height:1.5;margin:0;';
+        note.textContent = 'Deal names and values are deliberately not carried on the phone. ' +
+          (a.owner || 'The account owner') + ' has them in Salesforce.';
+        wrap.appendChild(note);
       }
     } else {
       card.innerHTML =
@@ -3068,40 +3439,21 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
           '<svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="8" stroke="#6E8A9B" stroke-width="1.4"/><path d="M10 6.5v4.2M10 13.4v.2" stroke="#6E8A9B" stroke-width="1.6" stroke-linecap="round"/></svg>'+
           '<span style="font-size:15px;font-weight:600;">New to us</span>'+
         '</div>'+
-        '<p style="margin:0;font-size:14px;line-height:1.55;color:var(--ink-2);">No account matches this domain. It will be created when you send the leads across.</p>';
+        '<p style="margin:0;font-size:14px;line-height:1.55;color:var(--ink-2);">The book carries every account in Salesforce, not only the ones with deals, so this domain not being in it means there is no record of them at all. Industry and country are not known — enrichment or a quick edit fills them before the upload.</p>';
+      wrap.appendChild(card);
     }
-    wrap.appendChild(card);
 
-    var samp = document.createElement('p');
-    samp.className='dim'; samp.style.cssText='font-size:11.5px;line-height:1.5;margin:0;';
-    samp.textContent = 'Sample data — the built app reads this from your real Salesforce at the moment the badge is scanned.';
-    wrap.appendChild(samp);
+    var stamp = document.createElement('p');
+    stamp.className = 'dim'; stamp.style.cssText = 'font-size:11.5px;line-height:1.5;margin:0;';
+    var ev = state.events.filter(function(x){ return x.end; })
+                         .sort(function(p, q){ return p.end < q.end ? 1 : -1; })[0];
+    stamp.textContent = 'From the account book on this phone' +
+      (sfBook.built ? ', built ' + sfBook.built : '') + '. It clears itself ' +
+      (ev ? 'on ' + niceDates(new Date(new Date(ev.end + 'T00:00:00').getTime() + 864e5)
+                              .toISOString().slice(0, 10))
+          : 'when the event ends') + '.';
+    wrap.appendChild(stamp);
 
-    var ah = document.createElement('div');
-    ah.style.cssText='margin-top:10px;'; ah.innerHTML = '<span class="eyebrow">APOLLO</span>';
-    wrap.appendChild(ah);
-
-    if(co.enriched){
-      var ec = document.createElement('div'); ec.className='card'; ec.style.cssText='padding:15px;';
-      ec.innerHTML = row('Industry', co.enriched.industry) + row('Employees', co.enriched.size) +
-        row('Headquarters', co.enriched.hq) + row('Revenue band', co.enriched.revenue) + row('Technologies', co.enriched.tech);
-      wrap.appendChild(ec);
-      var en = document.createElement('p');
-      en.className='dim'; en.style.cssText='font-size:11.5px;line-height:1.5;margin:0;';
-      en.textContent = 'Sample enrichment. In the built app this is one Apollo API call, made server-side so the key never reaches the phone.';
-      wrap.appendChild(en);
-    } else {
-      var eb = document.createElement('button');
-      eb.className = 'btn ghost';
-      eb.innerHTML = '<svg width="17" height="17" viewBox="0 0 20 20" fill="none" style="flex-shrink:0;"><circle cx="9" cy="9" r="6" stroke="#9DB3C0" stroke-width="1.6"/><path d="M13.5 13.5L17 17" stroke="#9DB3C0" stroke-width="1.6" stroke-linecap="round"/></svg> Enrich with Apollo';
-      onTap(eb, function(){ enrich(co); });
-      wrap.appendChild(eb);
-      var eh = document.createElement('p');
-      eh.className='dim'; eh.style.cssText='font-size:12px;line-height:1.5;margin:0;';
-      eh.textContent = 'Fills in industry, headcount, revenue band and the tech they run — the context that decides whether this is worth an AE’s time.';
-      wrap.appendChild(eh);
-    }
-    var sp = document.createElement('div'); sp.style.height='24px'; wrap.appendChild(sp);
     body.appendChild(wrap);
   }
   function row(k, v){
@@ -3656,40 +4008,72 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     v = (v==null?'':String(v)).replace(/\r?\n/g,' ').trim();
     return /[",;]/.test(v) ? '"'+v.replace(/"/g,'""')+'"' : v;
   }
+  /* ---------- the export ----------
+     Seventeen columns, in the upload template's order, using the template's own
+     vocabulary. Everything iBooth knows that the template has no column for —
+     the MEDDIC, the rating, the transcript — goes into Marketing Notes, which
+     maps to a 32,000 character field and is the only place it fits. */
+  function marketingNotes(co){
+    var f = companyFields(co.id), r = rulesFor(activeEvent() || {}), bits = [];
+
+    /* the rating leads, because it is what an account executive triages on and
+       the template has nowhere else to put it */
+    bits.push('[' + String(heatFor(co) || 'cold').toUpperCase() + ']');
+
+    var summary = String(co.summary || summarise(co, f) || '').trim();
+    var meddic = [];
+    MEDDIC.forEach(function(d){
+      if(!r[d.k]) return;
+      var v = String(f[d.k] || '').trim();
+      if(v) meddic.push(d.meddic + ': ' + v);
+    });
+    if(summary || meddic.length){
+      bits.push('Summary: ' + [summary, meddic.join(' | ')].filter(Boolean).join(' '));
+    }
+
+    var notes = notesOf(co.id).map(function(n){ return String(n.transcript || '').trim(); })
+                 .filter(Boolean).join('  ||  ');
+    if(notes) bits.push('Recorded note: ' + notes);
+
+    var ev = activeEvent() || {};
+    var stamp = [ev.name, ev.venue, ev.stand ? 'stand ' + ev.stand : ''].filter(Boolean).join(' · ');
+    if(stamp) bits.push('Captured at ' + stamp + '.');
+    return bits.join('  ');
+  }
+
   function buildCSV(){
     var e = activeEvent() || {};
+    var blank = function(v){ return (!v || v === '—') ? '' : v; };
     var cols = [
-      ['Company', function(ct,co){ return co.name; }],
-      ['Domain', function(ct,co){ return co.domain; }],
-      ['Name', function(ct){ return ct.name; }],
-      ['Job title', function(ct){ return ct.title; }],
-      ['Email', function(ct){ return ct.email; }],
-      ['Phone', function(ct){ return ct.phone; }],
-      ['Captured', function(ct){ return new Date(ct.ts).toISOString(); }],
-      ['Scanned by', function(ct){ return ct.byName || ''; }],
-      ['Scanned by email', function(ct){ return ct.by || ''; }],
-      ['Event', function(){ return e.name || ''; }],
-      ['Region', function(){ return e.region || ''; }],
-      ['Campaign', function(){ return e.campaign || ''; }],
-      ['Lead source', function(){ return e.source || ''; }],
-      ['Rating', function(ct,co){ return heatFor(co); }],
-      ['In CRM', function(ct,co){ return co.sent ? 'yes' : 'no'; }]
+      ['First Name',                    function(ct){ return ensureSplit(ct).firstName || ''; }],
+      ['Last Name',                     function(ct){ return ensureSplit(ct).lastName || ''; }],
+      ['Job Title',                     function(ct){ return blank(ct.title); }],
+      ['Company Name',                  function(ct,co){ return co.name || ''; }],
+      ['Email Address',                 function(ct){ return blank(ct.email); }],
+      ['Phone Number',                  function(ct){ return blank(ct.phone); }],
+      ['Address',                       function(){ return ''; }],
+      ['Country',                       function(ct,co){ return co.country || e.country || ''; }],
+      ['Industry',                      function(ct,co){ return co.industry || ''; }],
+      ['Import Campaign Member Status', function(ct){ return ensureSplit(ct).memberStatus || TPL_STATUS_DEFAULT; }],
+      ['Import Campaign Name',          function(){ return e.campaign || e.name || ''; }],
+      ['Lead Source',                   function(){ return TPL_LEAD_SOURCE; }],
+      ['First opt-in',                  function(ct){ return ensureSplit(ct).optIn === false ? 'FALSE' : 'TRUE'; }],
+      ['Contact Owner',                 function(ct,co){ return co.sfOwner || e.owner || ''; }],
+      ['Website',                       function(ct,co){ return co.domain ? 'www.' + co.domain : ''; }],
+      ['URL Linkedin',                  function(ct){ return ct.linkedin || ''; }],
+      ['Marketing Notes',               function(ct,co){ return marketingNotes(co); }]
     ];
-    MEDDIC.forEach(function(d){
-      if(!ruleOn[d.k]) return;
-      cols.push([d.meddic, function(ct){ return contactFields(ct)[d.k] || ''; }]);
-    });
-    cols.push(['Summary', function(ct,co){ return co.summary || summarise(co, companyFields(co.id)); }]);
-    cols.push(['Notes', function(ct,co){ return notesOf(co.id).map(function(n){ return n.transcript; }).join('  ||  '); }]);
-    cols.push(['Read by', function(ct,co){
-      var r = notesOf(co.id).map(function(n){ return n.readBy || 'phone'; });
-      return r.length ? (r.indexOf('claude') > -1 ? 'claude' : r[0]) : '';
-    }]);
     var rows = [cols.map(function(c){ return csvCell(c[0]); }).join(',')];
     evContacts().forEach(function(ct){
       var co = companyById(ct.companyId); if(!co) return;
       rows.push(cols.map(function(c){ return csvCell(c[1](ct, co)); }).join(','));
     });
+    /* The book used to be wiped here, on the reasoning that the export is the
+       moment it has done its job. On a three-day show it is not: a rep who
+       exports on Tuesday evening lost the CRM tab for Wednesday and Thursday,
+       and getting it back means finding the file again on a conference network.
+       The end-of-event expiry achieves the same thing without fighting the way
+       a show actually runs. */
     return '﻿' + rows.join('\r\n');
   }
   /* =========================================================
@@ -4267,6 +4651,22 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     el.textContent = eventCode(e);
   };
 
+
+  /* the template's dropdowns, rendered as the app's own selects */
+  function fillTemplateSelects(){
+    var o = document.getElementById('ev-owner');
+    if(o && !o.options.length){
+      o.innerHTML = '<option value="">— pick an owner —</option>' +
+        TPL_OWNERS.map(function(n){ return '<option>' + esc(n) + '</option>'; }).join('');
+    }
+    var st = document.getElementById('ev-status');
+    if(st && !st.options.length){
+      st.innerHTML = TPL_STATUS.map(function(n){
+        return '<option' + (n === TPL_STATUS_DEFAULT ? ' selected' : '') + '>' + esc(n) + '</option>';
+      }).join('');
+    }
+  }
+
   window.openJoin = function(){
     document.getElementById('join-code').value = '';
     document.getElementById('join-scrim').classList.add('on');
@@ -4718,6 +5118,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   loadAI();
   load();
   loadMe();
+  loadBook();
   wireSheets();
   buildWave();
   if(activeEvent()) paintEvent();
