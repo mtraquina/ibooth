@@ -246,7 +246,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
 </script>
 </head>
 <body>
-<script>window.IBOOTH_BUILD='2026-09-03 ebad2e';</script>
+<script>window.IBOOTH_BUILD='2026-09-03 9bbf75';</script>
 <div id="app">
 
   <!-- ============ SIGN IN ============ -->
@@ -464,8 +464,14 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
 
         <div class="fld">
           <label for="ev-campaign">SALESFORCE CAMPAIGN</label>
-          <input id="ev-campaign" placeholder="M20/20 EU 2026" autocomplete="off">
-          <span class="hint">Every contact becomes a campaign member — this is how marketing attributes pipeline to the show.</span>
+          <!-- A picklist, not a text box. "Import Campaign Name" has to match
+               Salesforce character for character or the upload attaches the
+               leads to nothing, and the real names read like
+               "Tradeshow-EMEA-FY26-Q2-Identity Week". Typing it from memory at
+               the end of a show day is a coin toss. -->
+          <select id="ev-campaign-pick"><option value="">Choose from Salesforce…</option></select>
+          <input id="ev-campaign" placeholder="M20/20 EU 2026" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
+          <span class="hint" id="ev-campaign-hint">Every contact becomes a campaign member — this is how marketing attributes pipeline to the show.</span>
         </div>
         <div class="fld">
           <label for="ev-owner">CONTACT OWNER</label>
@@ -802,6 +808,45 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       <button class="btn" id="l-sync" onclick="openSync()">Send to Salesforce</button>
     </div>
 
+    <!-- Editing a person used to be four modal prompts one after another:
+         answer the name, a second box appears, and anybody who thinks they are
+         finished taps the cross and the other three never get asked. Hence
+         "only the name can be edited". One sheet, every field, one Save. -->
+    <div class="scrim" id="pe-scrim" onclick="closePerson()"></div>
+    <div class="sheet" id="pe-sheet">
+      <div class="grab"></div>
+      <h2 class="mid">Edit this person</h2>
+      <p class="muted" style="font-size:13.5px;margin:5px 0 0;" id="pe-sub"></p>
+      <div class="col" style="gap:12px;margin-top:16px;">
+        <div class="row" style="display:flex;gap:10px;">
+          <div class="fld" style="flex:1;"><label for="pe-first">FIRST NAME</label><input id="pe-first" type="text" autocapitalize="words" autocorrect="off"></div>
+          <div class="fld" style="flex:1;"><label for="pe-last">LAST NAME</label><input id="pe-last" type="text" autocapitalize="words" autocorrect="off"></div>
+        </div>
+        <div class="fld"><label for="pe-title">JOB TITLE</label><input id="pe-title" type="text" autocapitalize="words"></div>
+        <div class="fld"><label for="pe-email">EMAIL</label><input id="pe-email" type="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
+        <div class="fld"><label for="pe-phone">PHONE</label><input id="pe-phone" type="tel" inputmode="tel"></div>
+        <div class="fld"><label for="pe-linkedin">LINKEDIN</label><input id="pe-linkedin" type="url" inputmode="url" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="linkedin.com/in/…"><span class="hint">A column in the upload template that is otherwise always empty.</span></div>
+        <div class="fld">
+          <label for="pe-status">CAMPAIGN MEMBER STATUS</label>
+          <select id="pe-status"></select>
+          <span class="hint">What this person did at the show. The event's default is used unless you change it here.</span>
+        </div>
+        <div class="fld">
+          <label>MARKETING OPT-IN</label>
+          <div class="seg" id="pe-optin">
+            <button type="button" data-optin="1" class="on">Opted in</button>
+            <button type="button" data-optin="0">Not opted in</button>
+          </div>
+          <span class="hint">Correct anyone who asked not to be contacted.</span>
+        </div>
+      </div>
+      <div class="col" style="gap:10px;margin-top:18px;">
+        <button class="btn" id="pe-save" onclick="savePerson()">Save</button>
+        <button class="btn ghost" onclick="closePerson()">Cancel</button>
+      </div>
+      <div style="height:8px;"></div>
+    </div>
+
     <div class="scrim" id="ex-scrim" onclick="closeExport()"></div>
     <div class="sheet" id="ex-sheet">
       <div class="grab"></div>
@@ -1049,6 +1094,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
      And no sheet survives a change of screen. */
   var SHEETS = [
     { sheet:'join-sheet', scrim:'join-scrim', close:'closeJoin'   },
+    { sheet:'pe-sheet',   scrim:'pe-scrim',   close:'closePerson' },
     { sheet:'ex-sheet',   scrim:'ex-scrim',   close:'closeExport' },
     { sheet:'sheet',      scrim:'scrim',      close:'closeSync'   }
   ];
@@ -2005,6 +2051,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     document.getElementById('ev-start').value = e ? e.start : iso(d);
     document.getElementById('ev-end').value = e ? e.end : iso(new Date(d.getTime() + 2*864e5));
     document.getElementById('ev-campaign').value = e ? e.campaign : '';
+    paintCampaigns(e ? e.campaign : '');
 
     document.getElementById('ev-followup').value = e ? e.followup : 3;
     document.getElementById('ev-retain').value = e ? e.retain : 30;
@@ -2063,6 +2110,28 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   }
   Array.prototype.forEach.call(document.querySelectorAll('#ev-optin button'), function(b){
     b.addEventListener('click', function(e){ e.preventDefault(); evOptIn = b.dataset.optin === '1'; paintOptIn(); });
+  });
+  /* the same segment on the person sheet, which is read back on Save rather
+     than held in a variable — there is only ever one person being edited */
+  /* Picking fills the text box, which stays the single source of truth so the
+     save path and every older event carry on working untouched. */
+  (function(){
+    var sel = document.getElementById('ev-campaign-pick');
+    var inp = document.getElementById('ev-campaign');
+    if(!sel || !inp) return;
+    sel.addEventListener('change', function(){
+      if(sel.value === '__type__'){ inp.value = ''; inp.style.display = ''; inp.focus(); return; }
+      if(sel.value){ inp.value = sel.value; inp.style.display = 'none'; }
+      else { inp.style.display = ''; }
+    });
+  })();
+
+  Array.prototype.forEach.call(document.querySelectorAll('#pe-optin button'), function(b){
+    b.addEventListener('click', function(e){
+      e.preventDefault();
+      Array.prototype.forEach.call(b.parentNode.children, function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+    });
   });
 
   window.saveEvent = function(){
@@ -3362,16 +3431,62 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     body.appendChild(wrap);
   }
 
+  /* One sheet with every field on it. The previous version asked for the four
+     fields in four consecutive modals, so anyone who tapped the cross after
+     correcting the name — reasonably, having finished — never got asked the
+     rest, and the app looked as though only the name could be edited. */
+  var peTarget = null;
   function editContact(ct){
-    var FIELDS = [['name','NAME'],['title','JOB TITLE'],['email','EMAIL'],['phone','PHONE']];
-    var i = 0;
-    function step(){
-      if(i >= FIELDS.length){ save(); setTab('people'); return; }
-      var f = FIELDS[i++];
-      openEdit(f[1], ct[f[0]], false, function(v){ ct[f[0]] = v || ct[f[0]]; step(); });
-    }
-    step();
+    peTarget = ct;
+    ensureSplit(ct);
+    var g = function(id){ return document.getElementById(id); };
+    var blank = function(v){ return (!v || v === '—') ? '' : v; };
+    g('pe-sub').textContent = 'Whatever you change here is what goes into the upload.';
+    g('pe-first').value    = blank(ct.firstName);
+    g('pe-last').value     = blank(ct.lastName);
+    g('pe-title').value    = blank(ct.title);
+    g('pe-email').value    = blank(ct.email);
+    g('pe-phone').value    = blank(ct.phone);
+    g('pe-linkedin').value = blank(ct.linkedin);
+
+    var sel = g('pe-status');
+    sel.innerHTML = TPL_STATUS.map(function(s){
+      return '<option value="' + esc(s) + '">' + esc(s) + '</option>'; }).join('');
+    sel.value = ct.memberStatus || TPL_STATUS_DEFAULT;
+
+    var on = ct.optIn === false ? '0' : '1';
+    [].forEach.call(g('pe-optin').querySelectorAll('button'), function(btn){
+      btn.classList.toggle('on', btn.getAttribute('data-optin') === on);
+    });
+    g('pe-scrim').classList.add('on');
+    g('pe-sheet').classList.add('on');
   }
+  window.closePerson = function(){
+    document.getElementById('pe-scrim').classList.remove('on');
+    document.getElementById('pe-sheet').classList.remove('on');
+    peTarget = null;
+  };
+  window.savePerson = function(){
+    var ct = peTarget; if(!ct){ closePerson(); return; }
+    var g = function(id){ return (document.getElementById(id).value || '').trim(); };
+    ct.firstName = g('pe-first');
+    ct.lastName  = g('pe-last');
+    /* name is what the rest of the app shows; keep it in step with the parts,
+       and do not leave somebody nameless because both boxes were cleared */
+    var joined = (ct.firstName + ' ' + ct.lastName).replace(/\s+/g, ' ').trim();
+    if(joined) ct.name = joined;
+    ct.title    = g('pe-title') || '—';
+    ct.email    = g('pe-email') || '—';
+    ct.phone    = g('pe-phone');
+    ct.linkedin = g('pe-linkedin');
+    ct.memberStatus = document.getElementById('pe-status').value || TPL_STATUS_DEFAULT;
+    var chosen = document.getElementById('pe-optin').querySelector('button.on');
+    ct.optIn = !chosen || chosen.getAttribute('data-optin') === '1';
+    save();
+    closePerson();
+    setTab('people');
+    toast('Saved');
+  };
 
   function renderNotes(body, co){
     var notes = notesOf(co.id);
@@ -3467,6 +3582,55 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   /* re-read from storage without wiping it, so the expiry rule can be tested
      the way it actually runs: on a cold start of the app */
   window.reloadBook = function(){ sfBook = null; return !!loadBook(); };
+  /* Campaigns travel in the book, so they are refreshed by the same weekly job
+     and the same silent download. Event-shaped ones first, newest first inside
+     each group — a rep is nearly always standing at the most recent show. */
+  var EVENTY = /^(Tradeshow|Live Event|Conference|Webinar)/i;
+  function campaigns(){
+    if(!sfBook) loadBook();
+    var raw = (sfBook && sfBook.camp) ? String(sfBook.camp) : '';
+    if(!raw) return [];
+    return raw.split('\n').filter(Boolean).map(function(line){
+      var f = line.split('\t');
+      return { name:f[0], type:f[1] || '', when:f[2] || '', ev:EVENTY.test(f[1] || '') };
+    });
+  }
+  window.campaignList = campaigns;
+
+  function paintCampaigns(current){
+    var sel = document.getElementById('ev-campaign-pick');
+    var inp = document.getElementById('ev-campaign');
+    var hint = document.getElementById('ev-campaign-hint');
+    if(!sel || !inp) return;
+    var list = campaigns();
+    if(!list.length){
+      /* no book yet, or an older one without campaigns in it. The text box has
+         always worked; do not take it away and leave nothing behind. */
+      sel.style.display = 'none';
+      if(hint) hint.textContent = 'Every contact becomes a campaign member — this is how marketing ' +
+        'attributes pipeline to the show. Load the account book to pick from the real Salesforce list.';
+      return;
+    }
+    sel.style.display = '';
+    var shows = list.filter(function(c){ return c.ev; });
+    var other = list.filter(function(c){ return !c.ev; });
+    var opt = function(c){
+      return '<option value="' + esc(c.name) + '">' + esc(c.name) +
+             (c.when ? '  ·  ' + esc(monthYear(c.when)) : '') + '</option>';
+    };
+    sel.innerHTML = '<option value="">Choose from Salesforce…</option>' +
+      (shows.length ? '<optgroup label="Shows and events">' + shows.map(opt).join('') + '</optgroup>' : '') +
+      (other.length ? '<optgroup label="Other campaigns">' + other.map(opt).join('') + '</optgroup>' : '') +
+      '<option value="__type__">Type it myself…</option>';
+
+    var known = list.some(function(c){ return c.name === current; });
+    sel.value = known ? current : (current ? '__type__' : '');
+    inp.style.display = (known && current) ? 'none' : '';
+    if(hint) hint.textContent = 'Every contact becomes a campaign member. ' + list.length +
+      ' campaigns from Salesforce, newest first — the name has to match exactly, so pick rather than type.';
+  }
+  window.paintCampaigns = paintCampaigns;
+
   window.bookStamp = function(){
     if(!sfBook) return null;
     var n = sfBook.count || (sfBook.accounts ? Object.keys(sfBook.accounts).length : 0);
