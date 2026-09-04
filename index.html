@@ -251,7 +251,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
 </script>
 </head>
 <body>
-<script>window.IBOOTH_BUILD='2026-09-04 9d5b68';</script>
+<script>window.IBOOTH_BUILD='2026-09-04 1e87a9';</script>
 <div id="app">
 
   <!-- ============ SIGN IN ============ -->
@@ -816,49 +816,6 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       <button class="btn" id="l-sync" onclick="openSync()">Send to Salesforce</button>
     </div>
 
-    <div class="scrim" id="ex-scrim" onclick="closeExport()"></div>
-    <div class="sheet" id="ex-sheet">
-      <div class="grab"></div>
-      <h2 class="mid" id="ex-title">Export</h2>
-      <p class="muted" style="font-size:13.5px;margin:5px 0 0;" id="ex-sub">One row per person, with their company's MEDDIC.</p>
-      <div class="col" style="gap:10px;margin-top:18px;">
-        <button class="btn" onclick="doDownload()">Download the spreadsheet</button>
-        <button class="btn ghost" onclick="doCopy()">Copy it as text instead</button>
-        <button class="btn ghost" id="ex-share" onclick="doShare()" style="display:none;">Share it</button>
-      </div>
-      <p class="dim" style="font-size:11.5px;text-align:center;margin:14px 0 0;">Opens in Excel, Numbers or Sheets.</p>
-
-      <div style="height:1px;background:var(--line);margin:16px 0 14px;"></div>
-      <span class="eyebrow">HOW THE SHOW WENT</span>
-      <div class="col" style="gap:10px;margin-top:11px;">
-        <button class="btn ghost" onclick="doFeedbackExport()">Download the feedback</button>
-        <span class="hint">One row per rep — what they said, plus what the app counted. A separate file from the leads, because it goes to whoever is deciding whether to build this, not into Salesforce.</span>
-      </div>
-
-      <div style="height:1px;background:var(--line);margin:16px 0 14px;"></div>
-      <span class="eyebrow">WORKING THIS STAND WITH SOMEONE ELSE</span>
-      <div class="col" style="gap:10px;margin-top:11px;">
-        <button class="btn ghost" onclick="doHandover()">Save my day as a handover file</button>
-        <label class="btn ghost" style="cursor:pointer;">
-          Merge in a colleague's file
-          <input type="file" accept=".json,application/json" id="merge-in" style="display:none;" onchange="mergeFile(this)">
-        </label>
-      </div>
-      <p class="dim" style="font-size:11.5px;text-align:center;margin:12px 0 0;line-height:1.5;">One of you merges the other's file at the end of the day. People scanned by both are matched on email, not duplicated.</p>
-    </div>
-
-    <div class="scrim" id="scrim" onclick="closeSync()"></div>
-    <div class="sheet" id="sheet">
-      <div class="grab"></div>
-      <h2 class="mid" id="sy-title">Send to Salesforce</h2>
-      <p class="muted" style="font-size:13.5px;margin:5px 0 0;" id="sy-sub">–</p>
-      <div class="card" style="margin-top:16px;background:var(--surface-2);padding:14px 15px;">
-        <div class="eyebrow" style="margin-bottom:11px;">WHERE EACH BIT LANDS</div>
-        <div class="col" style="gap:9px;font-size:12.5px;" id="sy-map"></div>
-      </div>
-      <button class="btn" style="margin-top:16px;" onclick="doSync()">Send them</button>
-      <p class="dim" style="font-size:11.5px;text-align:center;margin:12px 0 0;">Prototype — nothing actually leaves this phone.</p>
-    </div>
   </section>
 
   <!-- ============ RULES ============ -->
@@ -869,6 +826,59 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
        answer the name, a second box appears, and anybody who thinks they are
        finished taps the cross and the other three never get asked. Hence
        "only the name can be edited". One sheet, every field, one Save. -->
+  <!-- Every sheet lives at the top level, NOT inside a <section class="screen">.
+       A .sheet is position:absolute, so it lays out against its nearest
+       positioned ancestor — the screen. A screen that is not .on carries
+       transform:translateX(100%), opacity:0 and pointer-events:none, so a
+       sheet parked inside one opens a full screen-width to the right, fully
+       transparent and untappable. That is invisible until somebody opens the
+       sheet from a different screen, which is exactly what moving the export
+       to the events page did. -->
+
+  <div class="scrim" id="ex-scrim" onclick="closeExport()"></div>
+  <div class="sheet" id="ex-sheet">
+    <div class="grab"></div>
+    <h2 class="mid" id="ex-title">Export</h2>
+    <p class="muted" style="font-size:13.5px;margin:5px 0 0;" id="ex-sub">One row per person, with their company's MEDDIC.</p>
+    <div class="col" style="gap:10px;margin-top:18px;">
+      <button class="btn" onclick="doDownload()">Download the spreadsheet</button>
+      <button class="btn ghost" onclick="doCopy()">Copy it as text instead</button>
+      <button class="btn ghost" id="ex-share" onclick="doShare()" style="display:none;">Share it</button>
+    </div>
+    <p class="dim" style="font-size:11.5px;text-align:center;margin:14px 0 0;">Opens in Excel, Numbers or Sheets.</p>
+
+    <div style="height:1px;background:var(--line);margin:16px 0 14px;"></div>
+    <span class="eyebrow">HOW THE SHOW WENT</span>
+    <div class="col" style="gap:10px;margin-top:11px;">
+      <button class="btn ghost" onclick="doFeedbackExport()">Download the feedback</button>
+      <span class="hint">One row per rep — what they said, plus what the app counted. A separate file from the leads, because it goes to whoever is deciding whether to build this, not into Salesforce.</span>
+    </div>
+
+    <div style="height:1px;background:var(--line);margin:16px 0 14px;"></div>
+    <span class="eyebrow">WORKING THIS STAND WITH SOMEONE ELSE</span>
+    <div class="col" style="gap:10px;margin-top:11px;">
+      <button class="btn ghost" onclick="doHandover()">Save my day as a handover file</button>
+      <label class="btn ghost" style="cursor:pointer;">
+        Merge in a colleague's file
+        <input type="file" accept=".json,application/json" id="merge-in" style="display:none;" onchange="mergeFile(this)">
+      </label>
+    </div>
+    <p class="dim" style="font-size:11.5px;text-align:center;margin:12px 0 0;line-height:1.5;">One of you merges the other's file at the end of the day. People scanned by both are matched on email, not duplicated.</p>
+  </div>
+
+  <div class="scrim" id="scrim" onclick="closeSync()"></div>
+  <div class="sheet" id="sheet">
+    <div class="grab"></div>
+    <h2 class="mid" id="sy-title">Send to Salesforce</h2>
+    <p class="muted" style="font-size:13.5px;margin:5px 0 0;" id="sy-sub">–</p>
+    <div class="card" style="margin-top:16px;background:var(--surface-2);padding:14px 15px;">
+      <div class="eyebrow" style="margin-bottom:11px;">WHERE EACH BIT LANDS</div>
+      <div class="col" style="gap:9px;font-size:12.5px;" id="sy-map"></div>
+    </div>
+    <button class="btn" style="margin-top:16px;" onclick="doSync()">Send them</button>
+    <p class="dim" style="font-size:11.5px;text-align:center;margin:12px 0 0;">Prototype — nothing actually leaves this phone.</p>
+  </div>
+
   <!-- Feedback on the show, asked at the only moment anyone will answer it:
        straight after the export, while the day is still in their head. Six
        questions, because the app has already measured everything it can
