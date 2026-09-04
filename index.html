@@ -95,7 +95,12 @@
     color:var(--ink);font-family:inherit;font-size:16px;padding:14px;outline:none;-webkit-appearance:none;appearance:none;
   }
   .fld input:focus,.fld select:focus{border-color:var(--accent);}
-  .fld .hint{font-size:12px;color:var(--ink-4);line-height:1.45;}
+  /* Bare, not ".fld .hint". Seven of these live outside a field — under
+     buttons, under a segmented control, under the account-book loader — and
+     every one was silently falling back to body text: bigger and darker than
+     the hints two lines above it. Commentary should look the same wherever it
+     sits. */
+  .hint{font-size:12px;color:var(--ink-4);line-height:1.45;display:block;}
   .two{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 
   .seg{display:flex;gap:4px;background:var(--surface);border:1px solid var(--line-2);border-radius:12px;padding:4px;}
@@ -246,7 +251,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
 </script>
 </head>
 <body>
-<script>window.IBOOTH_BUILD='2026-09-03 9bbf75';</script>
+<script>window.IBOOTH_BUILD='2026-09-04 3ad7e6';</script>
 <div id="app">
 
   <!-- ============ SIGN IN ============ -->
@@ -476,7 +481,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
         <div class="fld">
           <label for="ev-owner">CONTACT OWNER</label>
           <select id="ev-owner"></select>
-          <span class="hint">Who owns leads from this show. A company already in Salesforce uses its own account owner instead.</span>
+          <span class="hint" id="ev-owner-hint">Who owns leads from this show. A company already in Salesforce uses its own account owner instead.</span>
         </div>
         <div class="two">
           <div class="fld">
@@ -574,11 +579,14 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       </button>
     </div>
     <div class="pad" style="padding-top:8px;padding-bottom:10px;">
-      <button onclick="editEvent()" style="display:flex;align-items:center;gap:7px;min-height:30px;">
+      <!-- A label, not a button. Event settings belong on the events page,
+           where you go to look for them; opening the form from behind the
+           camera invites somebody to change a live show's capture rules with
+           a queue in front of them. -->
+      <div style="display:flex;align-items:center;gap:7px;min-height:30px;">
         <span style="width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;"></span>
         <span class="dim" style="font-size:12.5px;" id="scan-event">Event</span>
-        <svg width="12" height="12" viewBox="0 0 20 20" fill="none" style="opacity:.45;"><path d="M13.2 3.6l3.2 3.2L7.6 15.6 3.6 16.4l.8-4L13.2 3.6z" stroke="#9DB3C0" stroke-width="1.6" stroke-linejoin="round"/></svg>
-      </button>
+      </div>
     </div>
 
     <div class="viewport">
@@ -793,10 +801,10 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
         <h2 class="mid" id="l-count" style="font-size:20px;letter-spacing:-.4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">–</h2>
       </div>
       <div class="spacer"></div>
-      <button class="iconbtn" onclick="openExport()" aria-label="Export">
-        <svg width="19" height="19" viewBox="0 0 20 20" fill="none"><path d="M10 3v9M6.5 8.5L10 12l3.5-3.5M3.5 15.5h13" stroke="#9DB3C0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-      <button class="iconbtn" onclick="openRules()" aria-label="Rules" style="margin-left:8px;">
+      <!-- Export lives on the events page, at event level. Exporting is a
+           thing you do to a show, not to a screenful of companies, and having
+           it here as well meant two doors to the same room. -->
+      <button class="iconbtn" onclick="openRules()" aria-label="Rules">
         <svg width="19" height="19" viewBox="0 0 20 20" fill="none"><path d="M4 6h12M4 10h12M4 14h12" stroke="#9DB3C0" stroke-width="1.6" stroke-linecap="round"/><circle cx="7.5" cy="6" r="2" fill="#023047" stroke="#9DB3C0" stroke-width="1.6"/><circle cx="13" cy="10" r="2" fill="#023047" stroke="#9DB3C0" stroke-width="1.6"/><circle cx="8.5" cy="14" r="2" fill="#023047" stroke="#9DB3C0" stroke-width="1.6"/></svg>
       </button>
       <button class="iconbtn" onclick="go('s-scan');startCamera()" aria-label="Scan" style="margin-left:8px;">
@@ -806,45 +814,6 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     <div class="grow scroll pad" id="l-body"></div>
     <div class="pad safe-b" style="padding-top:12px;border-top:1px solid var(--line);">
       <button class="btn" id="l-sync" onclick="openSync()">Send to Salesforce</button>
-    </div>
-
-    <!-- Editing a person used to be four modal prompts one after another:
-         answer the name, a second box appears, and anybody who thinks they are
-         finished taps the cross and the other three never get asked. Hence
-         "only the name can be edited". One sheet, every field, one Save. -->
-    <div class="scrim" id="pe-scrim" onclick="closePerson()"></div>
-    <div class="sheet" id="pe-sheet">
-      <div class="grab"></div>
-      <h2 class="mid">Edit this person</h2>
-      <p class="muted" style="font-size:13.5px;margin:5px 0 0;" id="pe-sub"></p>
-      <div class="col" style="gap:12px;margin-top:16px;">
-        <div class="row" style="display:flex;gap:10px;">
-          <div class="fld" style="flex:1;"><label for="pe-first">FIRST NAME</label><input id="pe-first" type="text" autocapitalize="words" autocorrect="off"></div>
-          <div class="fld" style="flex:1;"><label for="pe-last">LAST NAME</label><input id="pe-last" type="text" autocapitalize="words" autocorrect="off"></div>
-        </div>
-        <div class="fld"><label for="pe-title">JOB TITLE</label><input id="pe-title" type="text" autocapitalize="words"></div>
-        <div class="fld"><label for="pe-email">EMAIL</label><input id="pe-email" type="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
-        <div class="fld"><label for="pe-phone">PHONE</label><input id="pe-phone" type="tel" inputmode="tel"></div>
-        <div class="fld"><label for="pe-linkedin">LINKEDIN</label><input id="pe-linkedin" type="url" inputmode="url" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="linkedin.com/in/…"><span class="hint">A column in the upload template that is otherwise always empty.</span></div>
-        <div class="fld">
-          <label for="pe-status">CAMPAIGN MEMBER STATUS</label>
-          <select id="pe-status"></select>
-          <span class="hint">What this person did at the show. The event's default is used unless you change it here.</span>
-        </div>
-        <div class="fld">
-          <label>MARKETING OPT-IN</label>
-          <div class="seg" id="pe-optin">
-            <button type="button" data-optin="1" class="on">Opted in</button>
-            <button type="button" data-optin="0">Not opted in</button>
-          </div>
-          <span class="hint">Correct anyone who asked not to be contacted.</span>
-        </div>
-      </div>
-      <div class="col" style="gap:10px;margin-top:18px;">
-        <button class="btn" id="pe-save" onclick="savePerson()">Save</button>
-        <button class="btn ghost" onclick="closePerson()">Cancel</button>
-      </div>
-      <div style="height:8px;"></div>
     </div>
 
     <div class="scrim" id="ex-scrim" onclick="closeExport()"></div>
@@ -888,6 +857,45 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   <!-- ============ RULES ============ -->
 
 
+
+    <!-- Editing a person used to be four modal prompts one after another:
+       answer the name, a second box appears, and anybody who thinks they are
+       finished taps the cross and the other three never get asked. Hence
+       "only the name can be edited". One sheet, every field, one Save. -->
+  <div class="scrim" id="pe-scrim" onclick="closePerson()"></div>
+  <div class="sheet" id="pe-sheet">
+    <div class="grab"></div>
+    <h2 class="mid">Edit this person</h2>
+    <p class="muted" style="font-size:13.5px;margin:5px 0 0;" id="pe-sub"></p>
+    <div class="col" style="gap:12px;margin-top:16px;">
+      <div class="row" style="display:flex;gap:10px;">
+        <div class="fld" style="flex:1;"><label for="pe-first">FIRST NAME</label><input id="pe-first" type="text" autocapitalize="words" autocorrect="off"></div>
+        <div class="fld" style="flex:1;"><label for="pe-last">LAST NAME</label><input id="pe-last" type="text" autocapitalize="words" autocorrect="off"></div>
+      </div>
+      <div class="fld"><label for="pe-title">JOB TITLE</label><input id="pe-title" type="text" autocapitalize="words"></div>
+      <div class="fld"><label for="pe-email">EMAIL</label><input id="pe-email" type="email" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false"></div>
+      <div class="fld"><label for="pe-phone">PHONE</label><input id="pe-phone" type="tel" inputmode="tel"></div>
+      <div class="fld"><label for="pe-linkedin">LINKEDIN</label><input id="pe-linkedin" type="url" inputmode="url" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="linkedin.com/in/…"><span class="hint">A column in the upload template that is otherwise always empty.</span></div>
+      <div class="fld">
+        <label for="pe-status">CAMPAIGN MEMBER STATUS</label>
+        <select id="pe-status"></select>
+        <span class="hint">What this person did at the show. The event's default is used unless you change it here.</span>
+      </div>
+      <div class="fld">
+        <label>MARKETING OPT-IN</label>
+        <div class="seg" id="pe-optin">
+          <button type="button" data-optin="1" class="on">Opted in</button>
+          <button type="button" data-optin="0">Not opted in</button>
+        </div>
+        <span class="hint">Correct anyone who asked not to be contacted.</span>
+      </div>
+    </div>
+    <div class="col" style="gap:10px;margin-top:18px;">
+      <button class="btn" id="pe-save" onclick="savePerson()">Save</button>
+      <button class="btn ghost" onclick="closePerson()">Cancel</button>
+    </div>
+    <div style="height:8px;"></div>
+  </div>
 
   <div class="scrim" id="join-scrim" onclick="closeJoin()"></div>
   <div class="sheet" id="join-sheet">
@@ -1316,9 +1324,18 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
      one line ends up quoted under three different MEDDIC headings. */
   var CLAIM_ORDER = ['metrics','next','economic','process','competition','pain','criteria','champion'];
 
-  function detect(text){
+  /* opts.chips relaxes the one-sentence-one-claim rule.
+     Speech recognition emits no punctuation whatsoever, so sentences() sees a
+     whole dictated note as a single sentence. The used[] gate is right for a
+     finished write-up — each field should quote a different line rather than
+     eight fields all quoting the same one — but during dictation it means the
+     first field in CLAIM_ORDER claims the only sentence and locks the other
+     seven out. metrics is first, which is exactly why the Number was the only
+     chip that ever lit while someone was talking. */
+  function detect(text, opts){
     var out = {};
     if(!text) return out;
+    var loose = !!(opts && opts.chips);
     var sents = sentences(text), used = {};
     CLAIM_ORDER.forEach(function(k){
       var d = meddicBy(k);
@@ -1329,20 +1346,28 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
         // either a spelled-out quantity, or a digit with a scale word, or a big enough digit
         if(!(m && (!m[1] || m[2] || parseFloat(m[1].replace(/,/g,'')) >= 100))) return;
         for(i=0;i<sents.length;i++){
-          if(!used[i] && NUM.test(sents[i])){
-            out.metrics = cap(sents[i].replace(/[.!?]+$/,'')); used[i]=1; return;
+          if((loose || !used[i]) && NUM.test(sents[i])){
+            out.metrics = cap(sents[i].replace(/[.!?]+$/,''));
+            if(!loose) used[i]=1;
+            return;
           }
         }
         return;
       }
       for(i=0;i<sents.length;i++){
-        if(!used[i] && d.re.test(sents[i])){
-          out[k] = cap(sents[i].replace(/[.!?]+$/,'')); used[i]=1; return;
+        if((loose || !used[i]) && d.re.test(sents[i])){
+          out[k] = cap(sents[i].replace(/[.!?]+$/,''));
+          if(!loose) used[i]=1;
+          return;
         }
       }
     });
     return out;
   }
+  /* read-only, for the tests. The MEDDIC array and the reader are the two
+     things most likely to be broken by a well-meaning change, and neither is
+     reachable from outside the IIFE without this. */
+  window.MEDDIC = MEDDIC; window.detect = detect; window.sentences = sentences;
 
   /* merged view of a company's MEDDIC: notes oldest→newest, newer wins, manual edits win over all */
   function companyFields(cid){
@@ -1429,13 +1454,23 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
 
   var TPL_LEAD_SOURCE = 'Event / Trade Show';   /* the only valid value for a show */
 
-  var TPL_OWNERS = ['Demand Gen','Shaun Bowman','James Leigh','Kristine Messenger','Milko Radotic',
-    'Omar Sanjuanero','Laura Armour','Eduardo Montellano','Renato De Andrade','Daniel Rock',
-    'Leo Curran','Henry Walsh','Vit Bruner','Ajay Amlani','Matthew Pearch','Adam Grayson',
-    'Dan Molina','Mike Summers','Jeroen Schreuders','Joanne Coughlan','Irma Vasiliauskaite',
-    'Jeremy Saal','Joy To','Amina Dashdorj','Erik Baardse','Louis Frost','Leigh Day',
-    'Anna Johansson','James Noonan','Gus Frankwicz','Caroline McAlinden',"Bridget O'Brien",
-    'Riley Bodoin','Jeffrey Johnson'];
+  /* The people who actually own leads, replacing the 34 the workbook shipped
+     with. Spellings are Salesforce's own, checked against active Users: the
+     supplied list read "Caroline Mcalinden" and "Jim Noonan" where both
+     Salesforce and the upload template say "Caroline McAlinden" and "James
+     Noonan", and a Contact Owner that does not match exactly is a rejected row.
+     James Tolfree, Kurt Salih and David Lopez are active users but are NOT yet
+     in the template's dropdown — see TPL_OWNERS_NEW below. */
+  var TPL_OWNERS = ['Demand Gen','Caroline McAlinden',"Bridget O'Brien",'Milko Radotic',
+    'Omar Sanjuanero','Renato De Andrade','Henry Walsh','Matthew Pearch','Adam Grayson',
+    'Mike Summers','Jeremy Saal','Joy To','Louis Frost','Leigh Day','James Noonan',
+    'Daniel Rock','James Tolfree','James Leigh','Kurt Salih','David Lopez'];
+
+  /* Real in Salesforce, absent from the upload template's dropdown. Rows
+     carrying these bounce on import until Marketing adds them, so the event
+     form says so at the point of choosing rather than letting it be a surprise
+     three days later. Empty this array once the workbook is updated. */
+  var TPL_OWNERS_NEW = ['James Tolfree','Kurt Salih','David Lopez'];
 
   /* A badge gives one string; the template wants two columns. The split has to
      be visible and correctable, because no rule gets "van der Berg" and
@@ -1873,13 +1908,26 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
         '<path d="M11.6 5.7l2.7 2.7" stroke="#6E8A9B" stroke-width="1.5" stroke-linecap="round"/></svg>';
       cog.addEventListener('click', function(ev){ ev.stopPropagation(); ev.preventDefault(); openEventSettings(e.id); });
 
+      /* the spreadsheet, from the event itself. Exporting is something you do
+         to a show, so this is where somebody goes looking for it — not three
+         screens in, on the list of companies. */
+      var dl = document.createElement('button');
+      dl.type = 'button';
+      dl.setAttribute('aria-label', 'Export the leads from ' + e.name);
+      dl.style.cssText = 'position:absolute;top:138px;right:12px;width:38px;height:38px;border-radius:11px;' +
+        'display:flex;align-items:center;justify-content:center;background:transparent;';
+      dl.innerHTML = '<svg width="17" height="17" viewBox="0 0 20 20" fill="none">' +
+        '<path d="M10 3v9M6.5 8.5L10 12l3.5-3.5M3.5 15.5h13" stroke="#6E8A9B" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      dl.addEventListener('click', function(ev){ ev.stopPropagation(); ev.preventDefault(); exportEvent(e.id); });
+
       card.style.position = 'relative';
       card.style.paddingRight = '58px';
-      card.style.minHeight = '146px';
+      card.style.minHeight = '188px';   /* four icons down the right-hand side */
       card.appendChild(open);
       card.appendChild(del);
       card.appendChild(pdf);
       card.appendChild(cog);
+      card.appendChild(dl);
       body.appendChild(card);
     });
     var sp = document.createElement('div'); sp.style.height = '20px'; body.appendChild(sp);
@@ -2647,7 +2695,8 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     var ev0 = activeEvent() || {};
     var ct = {
       id: uid(), eventId: state.activeId, name: p.name,
-      firstName: nm.first, lastName: nm.last,
+      /* an explicit split beats the guess — the card screen asks for both */
+      firstName: p.firstName || nm.first, lastName: p.lastName || nm.last,
       title: p.title || '—', company: p.company || '—',
       email: p.email || '—', phone: p.phone || '', source: p.source, ts: Date.now(),
       /* the template wants both of these on every row; they default from the
@@ -2979,10 +3028,22 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       ocrDiagnose();
     });
   }
-  var CARDF = [ {k:'name',label:'NAME'},{k:'company',label:'COMPANY'},{k:'email',label:'EMAIL'},{k:'title',label:'TITLE'},{k:'phone',label:'PHONE'} ];
+  /* First and last are separate here, not one NAME field split on the way out.
+     The upload template has two columns and splitName has to guess at
+     "Ana Paula dos Santos Silva"; the moment somebody is looking at the card
+     is the cheapest possible moment to correct that guess. */
+  var CARDF = [ {k:'firstName',label:'FIRST NAME'},{k:'lastName',label:'LAST NAME'},
+                {k:'company',label:'COMPANY'},{k:'email',label:'EMAIL'},
+                {k:'title',label:'TITLE'},{k:'phone',label:'PHONE'} ];
   var cardPhoto = '';
   function showCard(f, thumb){
     ocrFields = f; if(!f._conf) f._conf = {};
+    /* the reader gives one line; split it once, here, and let the rep fix it */
+    if(f.firstName === undefined && f.lastName === undefined){
+      var s = splitName(f.name || '');
+      f.firstName = s.first; f.lastName = s.last;
+      f._conf.firstName = f._conf.lastName = f._conf.name || 0;
+    }
     if(thumb){ cardPhoto = thumb; document.getElementById('card-img').src = thumb; }
     else if(!cardPhoto) document.getElementById('card-img').removeAttribute('src');
     var box = document.getElementById('card-fields'); box.innerHTML='';
@@ -3011,9 +3072,18 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     box.appendChild(wrap);
     go('s-card');
   }
+  /* read-only, for the tests: the card screen is otherwise only reachable by
+     pointing a real camera at a real business card */
+  window.showCard = showCard;
+  Object.defineProperty(window, 'ocrFields', { get: function(){ return ocrFields; } });
+
   window.cardConfirm = function(){
     var f = ocrFields || {};
-    addContact({ name:f.name||'New contact', title:f.title||'—', company:f.company||'—', email:f.email||'—', phone:f.phone||'', source:'Read off a business card' });
+    var full = ((f.firstName || '') + ' ' + (f.lastName || '')).replace(/\s+/g,' ').trim();
+    addContact({ name: full || f.name || 'New contact',
+                 firstName: f.firstName || '', lastName: f.lastName || '',
+                 title:f.title||'—', company:f.company||'—', email:f.email||'—',
+                 phone:f.phone||'', source:'Read off a business card' });
     go('s-scan'); startCamera();
   };
   window.scanPhoto = function(input){
@@ -3175,7 +3245,9 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
         var all = (finalText+interimText).trim();
         var el = document.getElementById('live-text');
         el.innerHTML = all ? '<span style="color:var(--ink-2)">'+esc(finalText)+'</span><span style="color:var(--ink)">'+esc(interimText)+'</span>' : 'Listening…';
-        paintCoverage(detect(all));
+        /* chips:true — the live stream has no punctuation, so the
+           exclusive one-claim-per-sentence rule would light only one */
+        paintCoverage(detect(all, { chips:true }));
       };
       recog.onerror = function(ev){ showTyping(ev.error==='not-allowed'||ev.error==='service-not-allowed'); };
       recog.onend = function(){ if(recording){ try{ recog.start(); }catch(e){} } };
@@ -3198,7 +3270,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     var t = document.getElementById('typed');
     if(t) t.addEventListener('input', function(){
       var spoken = (finalText + interimText).trim();
-      paintCoverage(detect((spoken + ' ' + this.value).trim()));
+      paintCoverage(detect((spoken + ' ' + this.value).trim(), { chips:true }));
     });
   })();
 
@@ -5047,6 +5119,22 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     if(o && !o.options.length){
       o.innerHTML = '<option value="">— pick an owner —</option>' +
         TPL_OWNERS.map(function(n){ return '<option>' + esc(n) + '</option>'; }).join('');
+      /* An owner the template does not know about is a rejected row, and the
+         rejection turns up days later at the upload. Say it here instead. */
+      o.addEventListener('change', function(){
+        var h = document.getElementById('ev-owner-hint');
+        if(!h) return;
+        if(TPL_OWNERS_NEW.indexOf(o.value) !== -1){
+          h.textContent = o.value + ' is in Salesforce but not yet in the lead upload ' +
+            'template. Marketing needs to add them to that dropdown, or these rows ' +
+            'will be rejected on import.';
+          h.style.color = 'var(--warn)';
+        } else {
+          h.textContent = 'Who owns leads from this show. A company already in Salesforce ' +
+            'uses its own account owner instead.';
+          h.style.color = '';
+        }
+      });
     }
     var st = document.getElementById('ev-status');
     if(st && !st.options.length){
@@ -5253,6 +5341,16 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     var ae = activeEvent(), d = new Date(), slug = (ae && ae.name ? ae.name : 'ibooth').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
     return slug + '-' + d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0') + '.csv';
   }
+  /* Export from the events page, at event level. openExport reads the active
+     event, so an event opened from the list has to become active first —
+     otherwise you would export whichever show you last had open. */
+  window.exportEvent = function(eventId){
+    var e = eventById(eventId);
+    if(!e){ toast('That event has gone'); return; }
+    state.activeId = eventId; save();
+    useRulesOf(e);
+    openExport();
+  };
   window.openExport = function(){
     if(!evContacts().length){ toast('Nothing to export yet'); return; }
     document.getElementById('ex-title').textContent = 'Export ' + evContacts().length + (evContacts().length===1?' person':' people');
