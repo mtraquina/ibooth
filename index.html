@@ -6,6 +6,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#011E2E">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="iBooth">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="icon" href="./icon-192.png" sizes="192x192" type="image/png">
 <title>iBooth</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 
@@ -251,7 +256,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
 </script>
 </head>
 <body>
-<script>window.IBOOTH_BUILD='2026-09-04 1e87a9';</script>
+<script>window.IBOOTH_BUILD='2026-09-05 4147b7';</script>
 <div id="app">
 
   <!-- ============ SIGN IN ============ -->
@@ -286,6 +291,16 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       </div>
     </div>
     <div class="grow scroll pad" style="padding-top:8px;">
+      <!-- Not a nicety. Safari deletes every byte this app has stored after
+           seven days of Safari use without somebody opening it, and a
+           home-screen web app is exempt. Hidden the moment it is installed. -->
+      <div id="install-nudge" style="display:none;align-items:flex-start;gap:11px;border:1px solid rgba(254,179,6,.3);background:rgba(254,179,6,.07);border-radius:14px;padding:14px;margin-bottom:18px;">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="none" style="flex-shrink:0;margin-top:1px;"><path d="M10 2.8v9.6M6.4 9l3.6 3.4L13.6 9M3.6 15.6h12.8" stroke="#FEB306" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <div class="col" style="gap:4px;flex:1;">
+          <span style="font-size:13.5px;font-weight:600;color:var(--warn);">Add iBooth to your home screen</span>
+          <span class="muted" style="font-size:12.5px;line-height:1.5;" id="install-how"></span>
+        </div>
+      </div>
       <p class="dim" style="font-size:13.5px;line-height:1.55;margin:0 0 20px;">Every lead you scan and every note you record is stamped with this, so a colleague's captures can be told from yours when the two are merged.</p>
 <div class="col" style="gap:14px;margin-top:18px;">
     <div class="fld">
@@ -879,6 +894,34 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     <p class="dim" style="font-size:11.5px;text-align:center;margin:12px 0 0;">Prototype — nothing actually leaves this phone.</p>
   </div>
 
+  <!-- The follow-up email. The gap between a show and the email that follows
+       it is where leads die: the rep gets home, the notes are cold, and the
+       message either never goes or says nothing. The app already holds the
+       conversation, the MEDDIC and who the person is. -->
+  <div class="scrim" id="fu-scrim" onclick="closeFollowup()"></div>
+  <div class="sheet" id="fu-sheet">
+    <div class="grab"></div>
+    <h2 class="mid">Follow-up email</h2>
+    <p class="muted" style="font-size:13.5px;margin:5px 0 0;" id="fu-sub"></p>
+    <div class="col" style="gap:12px;margin-top:16px;">
+      <div class="fld">
+        <label for="fu-subject">SUBJECT</label>
+        <input id="fu-subject" type="text" autocomplete="off">
+      </div>
+      <div class="fld">
+        <label for="fu-body">MESSAGE</label>
+        <textarea id="fu-body" rows="11" style="width:100%;background:var(--surface-2);border:1px solid var(--line-2);border-radius:12px;color:var(--ink);font-family:inherit;font-size:15px;line-height:1.55;padding:14px;outline:none;"></textarea>
+        <span class="hint" id="fu-hint"></span>
+      </div>
+    </div>
+    <div class="col" style="gap:10px;margin-top:16px;">
+      <button class="btn" id="fu-send" onclick="openInMail()">Open in my mail app</button>
+      <button class="btn ghost" onclick="copyFollowup()">Copy it</button>
+      <button class="btn ghost" id="fu-redo" onclick="draftFollowup(true)">Write it again</button>
+    </div>
+    <div style="height:8px;"></div>
+  </div>
+
   <!-- Feedback on the show, asked at the only moment anyone will answer it:
        straight after the export, while the day is still in their head. Six
        questions, because the app has already measured everything it can
@@ -1184,6 +1227,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     { sheet:'join-sheet', scrim:'join-scrim', close:'closeJoin'   },
     { sheet:'pe-sheet',   scrim:'pe-scrim',   close:'closePerson' },
     { sheet:'fb-sheet',   scrim:'fb-scrim',   close:'closeFeedback' },
+    { sheet:'fu-sheet',   scrim:'fu-scrim',   close:'closeFollowup' },
     { sheet:'ex-sheet',   scrim:'ex-scrim',   close:'closeExport' },
     { sheet:'sheet',      scrim:'scrim',      close:'closeSync'   }
   ];
@@ -1842,6 +1886,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
   }
 
   window.openMe = function(){
+    paintInstall();
     var known = !!me.email;
     /* first run is a step in signing up; later it is an edit you can back out of */
     document.getElementById('me-step').textContent  = known ? 'THIS PHONE' : 'FIRST THINGS FIRST';
@@ -3598,6 +3643,18 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       onTap(nb, function(){ noteForContact(ct.id); });
       row.appendChild(eb); row.appendChild(nb);
       card.appendChild(row);
+
+      /* The follow-up. Full width and named plainly, because it is the thing
+         that actually turns a scan into a conversation, and it goes green once
+         written so a rep can see who they have and have not got back to. */
+      var written = !!(ct.followup && ct.followup.body);
+      var fu = document.createElement('button');
+      fu.className = 'btn ghost sm';
+      fu.style.cssText = 'width:100%;margin-top:8px;' +
+        (written ? 'border-color:rgba(61,214,140,.4);color:var(--good);' : '');
+      fu.textContent = written ? 'Follow-up written \u2014 open it' : 'Write the follow-up';
+      onTap(fu, function(){ openFollowup(ct.id); });
+      card.appendChild(fu);
       wrap.appendChild(card);
     });
     var add = document.createElement('button');
@@ -4064,6 +4121,33 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       body.innerHTML = '<p class="dim" style="font-size:14.5px;line-height:1.6;margin-top:8px;">Nobody yet. Scan a QR code — any QR code — or tap <strong style="color:var(--ink-2)">Sample</strong> on the scanner.</p>';
       return;
     }
+    /* A company with nobody's words attached to it exports as a name, a job
+       title and silence — which is most of the value of the day gone. The app
+       has always known which ones they are; it just never said so while there
+       was still time to fix it. */
+    var quiet = evCompanies().filter(function(c){ return !notesOf(c.id).length; });
+    if(quiet.length){
+      var warn = document.createElement('button');
+      warn.type = 'button';
+      warn.style.cssText = 'width:100%;text-align:left;display:flex;gap:11px;align-items:flex-start;' +
+        'border:1px solid rgba(254,179,6,.3);background:rgba(254,179,6,.07);border-radius:14px;' +
+        'padding:13px 14px;margin-bottom:12px;';
+      warn.innerHTML = '<svg width="18" height="18" viewBox="0 0 20 20" fill="none" style="flex-shrink:0;margin-top:1px;">' +
+        '<path d="M10 3.2l7 12.2H3l7-12.2z" stroke="#FEB306" stroke-width="1.5" stroke-linejoin="round"/>' +
+        '<path d="M10 8v3.1M10 13.1v.2" stroke="#FEB306" stroke-width="1.6" stroke-linecap="round"/></svg>' +
+        '<span class="col" style="gap:3px;flex:1;">' +
+          '<span style="font-size:13.5px;font-weight:600;color:var(--warn);">' +
+            quiet.length + (quiet.length === 1 ? ' company has no write-up' : ' companies have no write-up') + '</span>' +
+          '<span class="muted" style="font-size:12.5px;line-height:1.5;">' +
+            esc(quiet.slice(0,3).map(function(c){ return c.name; }).join(', ')) +
+            (quiet.length > 3 ? ' and ' + (quiet.length - 3) + ' more' : '') +
+            '. They upload as a name and a job title. Tap to start with ' +
+            esc(quiet[0].name) + '.</span>' +
+        '</span>';
+      onTap(warn, function(){ openCompany(quiet[0].id); });
+      body.appendChild(warn);
+    }
+
     evCompanies().forEach(function(co){
       var people = contactsOf(co.id), notes = notesOf(co.id), f = companyFields(co.id), heat = heatFor(co);
       var b = document.createElement('button');
@@ -4812,6 +4896,165 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     save();
     closeFeedback();
     toast('Thank you — it goes out with the leads');
+  };
+
+  /* ---------- the follow-up email ----------
+     The gap between the show and the email is where leads die. Everything
+     needed is already on the phone: who they are, what was said, what the
+     note produced, and the rep's own name.
+
+     The hard rule is the app's rule everywhere else — it must not invent.
+     A conversation that produced nothing gets a short, honest note, not a
+     manufactured "great to discuss your digital transformation journey".
+     Claude is told that explicitly, and the on-device fallback obeys it by
+     construction because it only ever assembles sentences that were said. */
+  var fuTarget = null, fuDraft = {};
+
+  function followupContext(ct, co){
+    var f = companyFields(co.id), r = rulesFor(activeEvent() || {}), ev = activeEvent() || {};
+    var said = [];
+    MEDDIC.forEach(function(d){
+      if(!r[d.k]) return;
+      var v = String(f[d.k] || '').trim();
+      if(v) said.push(d.meddic + ': ' + v);
+    });
+    var notes = notesOf(co.id).concat(
+      state.notes.filter(function(n){ return n.contactId === ct.id; }));
+    return {
+      person: (ct.firstName || ct.name || '').trim(),
+      full: ct.name, title: blankish(ct.title), company: co.name,
+      me: me.name || 'a colleague',
+      event: ev.name || 'the show', venue: ev.venue || '',
+      said: said,
+      transcript: notes.map(function(n){ return n.transcript || ''; }).join(' ').slice(0, 1800),
+      summary: String(co.summary || '').trim()
+    };
+  }
+  function blankish(v){ return (!v || v === '—') ? '' : v; }
+
+  /* What the phone can write on its own: their words, handed back. Short, and
+     obviously assembled rather than pretending to be a letter. */
+  function followupOffline(c){
+    var lines = ['Hello' + (c.person ? ' ' + c.person : '') + ',', ''];
+    lines.push('Good to meet you at ' + c.event + '.');
+    if(c.said.length){
+      lines.push('');
+      lines.push('What I took away:');
+      c.said.forEach(function(x){ lines.push('  \u2014 ' + x); });
+    }
+    lines.push('');
+    lines.push(c.said.length
+      ? 'Happy to pick any of that up properly \u2014 would a short call next week suit?'
+      : 'I did not want to lose touch. Would a short call next week suit, so I can understand what you are working on?');
+    lines.push('');
+    lines.push(c.me);
+    return { subject: c.company + ' \u2014 following up from ' + c.event,
+             body: lines.join('\n'), by: 'the phone' };
+  }
+
+  window.openFollowup = function(contactId){
+    var ct = state.contacts.filter(function(x){ return x.id === contactId; })[0];
+    if(!ct){ toast('That person has gone'); return; }
+    var co = companyById(ct.companyId);
+    if(!co){ toast('No company for them'); return; }
+    fuTarget = { ct: ct, co: co };
+    document.getElementById('fu-sub').textContent =
+      (ct.name || 'This person') + (blankish(ct.title) ? ' \u00b7 ' + ct.title : '') + ' \u00b7 ' + co.name;
+    document.getElementById('fu-scrim').classList.add('on');
+    document.getElementById('fu-sheet').classList.add('on');
+    if(ct.followup && ct.followup.body){
+      fuDraft = ct.followup;
+      paintFollowup();
+    } else {
+      draftFollowup(false);
+    }
+  };
+  window.closeFollowup = function(){
+    document.getElementById('fu-scrim').classList.remove('on');
+    document.getElementById('fu-sheet').classList.remove('on');
+    fuTarget = null;
+  };
+  function paintFollowup(){
+    document.getElementById('fu-subject').value = fuDraft.subject || '';
+    document.getElementById('fu-body').value = fuDraft.body || '';
+    document.getElementById('fu-hint').textContent = fuDraft.by
+      ? 'Drafted by ' + fuDraft.by + '. Read it before you send it \u2014 edits are kept.'
+      : '';
+    var redo = document.getElementById('fu-redo');
+    if(redo) redo.style.display = aiReady() ? '' : 'none';
+  }
+
+  window.draftFollowup = function(again){
+    if(!fuTarget) return;
+    var ct = fuTarget.ct, co = fuTarget.co, c = followupContext(ct, co);
+    var body = document.getElementById('fu-body');
+    /* the phone's version goes up first, so there is always something on the
+       screen even if the network never answers */
+    fuDraft = followupOffline(c);
+    paintFollowup();
+    if(!aiReady()) return;
+
+    document.getElementById('fu-hint').textContent = 'Asking Claude…';
+    body.disabled = true;
+    var system = 'You write short follow-up emails for a salesperson after a trade show. ' +
+      'Rules, in order of importance:\n' +
+      '1. Never invent anything. Only refer to what the notes actually contain. If they ' +
+      'contain almost nothing, write a genuinely short note that asks to talk, and do not ' +
+      'dress it up.\n' +
+      '2. No marketing language. No "synergies", no "digital transformation journey", no ' +
+      '"circling back". Write the way one person writes to another.\n' +
+      '3. Under 140 words. Shorter is better.\n' +
+      '4. Reference one specific thing they said, if there is one. That is what proves ' +
+      'somebody was listening.\n' +
+      '5. End with one clear, easy ask.\n' +
+      'Reply as JSON only: {"subject": "...", "body": "..."}. The body is plain text ' +
+      'with real line breaks, signed off with the sender\u2019s name.';
+    var user = JSON.stringify({
+      to: { name: c.full, first: c.person, title: c.title, company: c.company },
+      from: c.me, event: c.event, venue: c.venue,
+      what_was_said: c.said, summary: c.summary,
+      raw_note: c.transcript
+    });
+
+    claudeCall(system, user, 700).then(function(txt){
+      var m = String(txt).match(/\{[\s\S]*\}/);
+      var j = m ? JSON.parse(m[0]) : null;
+      if(!j || !j.body) throw new Error('no draft');
+      fuDraft = { subject: String(j.subject || c.company + ' \u2014 following up'),
+                  body: String(j.body), by: 'Claude' };
+      paintFollowup();
+    }).catch(function(){
+      fuDraft.by = 'the phone \u2014 Claude could not be reached';
+      paintFollowup();
+    }).then(function(){ body.disabled = false; });
+  };
+
+  function keepFollowup(){
+    if(!fuTarget) return null;
+    var d = { subject: (document.getElementById('fu-subject').value || '').trim(),
+              body: (document.getElementById('fu-body').value || '').trim(),
+              by: fuDraft.by };
+    fuTarget.ct.followup = d; save();
+    return d;
+  }
+  window.copyFollowup = function(){
+    var d = keepFollowup(); if(!d) return;
+    var text = d.subject + '\n\n' + d.body;
+    var done = function(){ toast('Copied \u2014 paste it into your mail app'); };
+    if(navigator.clipboard && navigator.clipboard.writeText)
+      navigator.clipboard.writeText(text).then(done, function(){ toast('Could not copy'); });
+    else done();
+  };
+  /* mailto rather than anything cleverer: it is the one thing that works on
+     every phone, with whichever mail app they actually use. */
+  window.openInMail = function(){
+    var d = keepFollowup(); if(!d || !fuTarget) return;
+    var to = blankish(fuTarget.ct.email);
+    var href = 'mailto:' + encodeURIComponent(to) +
+      '?subject=' + encodeURIComponent(d.subject) +
+      '&body=' + encodeURIComponent(d.body);
+    closeFollowup();
+    location.href = href;
   };
 
   /* everything the report needs, gathered once */
@@ -5683,7 +5926,20 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     if(!evContacts().length){ toast('Nothing to export yet'); return; }
     document.getElementById('ex-title').textContent = 'Export ' + evContacts().length + (evContacts().length===1?' person':' people');
     var cnt = MEDDIC.filter(function(d){ return ruleOn[d.k]; }).length;
-    document.getElementById('ex-sub').textContent = 'One row per person, carrying their company’s ' + cnt + ' MEDDIC fields, summary and notes.';
+    /* Last chance to notice. After this the leads are in a spreadsheet and
+       nobody is going back to add what was said. */
+    var quiet = evCompanies().filter(function(c){ return !notesOf(c.id).length; });
+    var sub = document.getElementById('ex-sub');
+    if(quiet.length){
+      sub.textContent = quiet.length + (quiet.length === 1 ? ' company has' : ' companies have') +
+        ' no write-up — ' + quiet.slice(0,3).map(function(c){ return c.name; }).join(', ') +
+        (quiet.length > 3 ? ' and ' + (quiet.length - 3) + ' more' : '') +
+        '. They will export as a name and a job title.';
+      sub.style.color = 'var(--warn)';
+    } else {
+      sub.textContent = 'One row per person, carrying their company’s ' + cnt + ' MEDDIC fields, summary and notes.';
+      sub.style.color = '';
+    }
     document.getElementById('ex-share').style.display = navigator.share ? 'flex' : 'none';
     document.getElementById('ex-scrim').classList.add('on');
     document.getElementById('ex-sheet').classList.add('on');
@@ -5927,7 +6183,51 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     });
   }
 
+  /* ---------- installed, and offline ----------
+     Registering the worker is what lets iOS offer "Add to Home Screen", and
+     that is not cosmetic: Safari deletes all script-writable storage — this
+     app's entire contents — after seven days of Safari use without the user
+     touching the site. A home-screen web app is exempt because it is not
+     Safari and keeps its own counter. Until a rep installs it, a show they do
+     not revisit within a week can simply vanish.
+
+     It also means the app opens on a dead conference network, which today it
+     may not do at all.
+
+     file:// has no service workers and neither does plain http, so the
+     single-file build and anything opened off the phone quietly skip this. */
+  function registerWorker(){
+    if(!('serviceWorker' in navigator)) return;
+    if(location.protocol !== 'https:' && location.hostname !== 'localhost') return;
+    navigator.serviceWorker.register('./sw.js').catch(function(){ /* not fatal */ });
+  }
+
+  /* Standalone means it was launched from the home screen. iOS reports it on
+     navigator.standalone; everyone else through the display-mode query. */
+  /* Said plainly, because the consequence is losing a day's work rather than
+     a slightly worse icon. Only shown until they do it. */
+  function paintInstall(){
+    var box = document.getElementById('install-nudge');
+    if(!box) return;
+    if(isInstalled() || location.protocol === 'file:'){ box.style.display = 'none'; return; }
+    var ios = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    document.getElementById('install-how').textContent =
+      (ios ? 'Tap the share button at the bottom of Safari, then Add to Home Screen. '
+           : 'Use your browser\u2019s menu, then Install or Add to Home screen. ') +
+      'Until you do, Safari can delete everything this app has saved after a week ' +
+      'of not opening it — events, people and notes included. Installed, it keeps them.';
+    box.style.display = 'flex';
+  }
+  window.paintInstall = paintInstall;
+
+  window.isInstalled = function(){
+    return !!(navigator.standalone ||
+      (window.matchMedia && matchMedia('(display-mode: standalone)').matches));
+  };
+
   /* ---------- boot ---------- */
+  registerWorker();
   paintBrand();
   useRulesOf(activeEvent());
   loadAI();
