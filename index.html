@@ -256,7 +256,7 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
 </script>
 </head>
 <body>
-<script>window.IBOOTH_BUILD='2026-09-05 4147b7';</script>
+<script>window.IBOOTH_BUILD='2026-09-07 01f051';</script>
 <div id="app">
 
   <!-- ============ SIGN IN ============ -->
@@ -3321,15 +3321,20 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     timerId = setInterval(function(){ document.getElementById('timer').textContent = mmss(Math.floor((Date.now()-t0)/1000)); }, 250);
     clearTimeout(silenceTimer);
     silenceTimer = setTimeout(function(){ if(recording && !(finalText+interimText).trim()) showTyping(false); }, 4500);
-    startMeter(); startSpeech();
+    startAudio();
   }
 
-  window.showTyping = function(hideLive){
+  /* `why` is optional and matters: without it this wrote its own generic line
+     over whatever the caller had just put in the hint, so the one message that
+     explained the actual failure — no signal, microphone taken, permission off
+     — was replaced by "not available in this browser" every time. */
+  window.showTyping = function(hideLive, why){
     var tw = document.getElementById('type-wrap');
     document.getElementById('type-toggle').style.display='none';
     if(hideLive){
       document.getElementById('live-wrap').style.display='none';
-      document.getElementById('type-hint').textContent = "Live transcription isn't available in this browser — type it, or use your keyboard's mic.";
+      document.getElementById('type-hint').textContent = why ||
+        "Live transcription isn't available in this browser — type it, or use your keyboard's mic.";
     }
     if(tw.style.display !== 'block'){ tw.style.display='block'; try{ document.getElementById('typed').focus({preventScroll:true}); }catch(e){} }
   };
@@ -3354,6 +3359,44 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     if(micHeld){ micHeld.getTracks().forEach(function(t){ t.stop(); }); micHeld = null; }
   }
 
+  /* Who owns the microphone — and what to do when the answer is "not us".
+
+     iOS lets getUserMedia and SpeechRecognition hold the microphone at the same
+     time. That is what makes the level meter and the live transcript work side
+     by side, and, because every phone this was built and tested on was an
+     iPhone, it is exactly why the Android problem shipped unnoticed.
+
+     Android's Chrome does not share. Its recogniser is a platform service that
+     wants the microphone to itself, so with the meter's stream already open,
+     start() comes back 'audio-capture' and no words ever arrive. The rep sees
+     "Listening…", the waveform moves — because the meter is working fine — and
+     they reasonably report that the microphone is broken.
+
+     So on Android the meter does not open a stream at all. The recogniser gets
+     the microphone, and the bars are driven from its own speech events instead.
+     Less precise than an analyser, but the bars exist to show the app is awake,
+     and the transcript is the part anyone actually needs. */
+  var MIC_EXCLUSIVE = /Android/i.test(navigator.userAgent || '');
+
+  var speaking = false, pulse = 0;
+  var speechTries = 0, speechFatal = false, restartTimes = [], lastError = '';
+
+  function paintBars(sample){
+    var bars = document.querySelectorAll('#wave i');
+    for(var i=0;i<bars.length;i++){
+      var h = sample(i, bars.length);
+      bars[i].style.height = h+'px';
+      bars[i].style.background = h>24 ? 'var(--accent)' : 'var(--line-2)';
+    }
+  }
+
+  function startAudio(){
+    speechTries = 0; speechFatal = false; restartTimes = []; lastError = '';
+    speaking = false; pulse = 0;
+    if(MIC_EXCLUSIVE){ startSpeech(); return; }   /* the recogniser gets the mic */
+    startMeter(); startSpeech();
+  }
+
   function startMeter(){
     if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return;
     getMic().then(function(s){
@@ -3369,24 +3412,56 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
       showTyping(true);
     });
   }
+  /* Hand the microphone back, so the recogniser can have it. */
+  function hushMeter(){
+    if(audioCtx){ try{ audioCtx.close(); }catch(e){} audioCtx=null; analyser=null; }
+    micStream = null;
+    releaseMic();
+  }
   function meterLoop(){
     if(!recording || !analyser) return;
     var data = new Uint8Array(analyser.frequencyBinCount);
     analyser.getByteFrequencyData(data);
-    var bars = document.querySelectorAll('#wave i');
-    for(var i=0;i<bars.length;i++){
-      var v = data[Math.floor(i*data.length/bars.length)]||0, h = 8 + Math.round((v/255)*58);
-      bars[i].style.height = h+'px';
-      bars[i].style.background = h>24 ? 'var(--accent)' : 'var(--line-2)';
-    }
+    paintBars(function(i,n){ return 8 + Math.round(((data[Math.floor(i*data.length/n)]||0)/255)*58); });
     requestAnimationFrame(meterLoop);
   }
+  /* No analyser to read on Android — the recogniser has the microphone — so the
+     bars follow whether it currently hears speech. */
+  function pulseLoop(){
+    if(!recording || !MIC_EXCLUSIVE) return;
+    pulse += 0.22;
+    paintBars(function(i){
+      if(!speaking) return 8;
+      return 8 + Math.round(Math.abs(Math.sin(pulse + i*0.5) * Math.sin(pulse*0.6 + i*0.17)) * 44);
+    });
+    requestAnimationFrame(pulseLoop);
+  }
+
+  /* Every one of these used to be silent. The rep was left looking at
+     "Listening…" with no idea whether to wait, tap something or give up. */
+  var SPEECH_TROUBLE = {
+    'audio-capture'         : 'Another app has the microphone. Close it and try again, or type the note here.',
+    'not-allowed'           : 'Microphone permission is off for this site. Tap the padlock in the address bar, allow the microphone, then reload.',
+    'service-not-allowed'   : 'This browser will not run speech recognition. Type it, or use your keyboard’s mic.',
+    'network'               : 'No connection, and Android does the listening on Google’s servers rather than on the phone — so live transcription needs signal. Type it, or use your keyboard’s mic, which works offline.',
+    'language-not-supported': 'This phone has no speech pack for that language. Type the note instead.',
+    'bad-grammar'           : 'The recogniser refused. Type the note instead.'
+  };
+  function speechTrouble(code){
+    showTyping(true, SPEECH_TROUBLE[code] ||
+      ('Live transcription stopped' + (code ? ' (' + code + ')' : '') + ' — type the note instead.'));
+  }
+
   function startSpeech(){
     var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if(!SR){ showTyping(true); return; }
     try{
       recog = new SR(); recog.continuous=true; recog.interimResults=true; recog.lang = navigator.language || 'en-GB';
+      recog.onstart       = function(){ speechTries = 0; if(MIC_EXCLUSIVE) pulseLoop(); };
+      recog.onspeechstart = function(){ speaking = true; };
+      recog.onspeechend   = function(){ speaking = false; };
       recog.onresult = function(e){
+        speaking = true;
         interimText='';
         for(var i=e.resultIndex;i<e.results.length;i++){
           var t=e.results[i][0].transcript;
@@ -3399,8 +3474,38 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
            exclusive one-claim-per-sentence rule would light only one */
         paintCoverage(detect(all, { chips:true }));
       };
-      recog.onerror = function(ev){ showTyping(ev.error==='not-allowed'||ev.error==='service-not-allowed'); };
-      recog.onend = function(){ if(recording){ try{ recog.start(); }catch(e){} } };
+      recog.onerror = function(ev){
+        var code = (ev && ev.error) || '';
+        lastError = code;
+        /* Punctuation of a long note, not a failure: the recogniser stops on a
+           pause and onend puts it straight back. */
+        if(code === 'no-speech' || code === 'aborted') return;
+        /* Android, most likely: the meter got there first. Give the microphone
+           back and ask once more, rather than sending the rep to the keyboard
+           for a problem the app can fix by itself. */
+        if(code === 'audio-capture' && speechTries < 1){
+          speechTries++;
+          try{ recog.onend = null; }catch(e){}
+          hushMeter();
+          setTimeout(function(){ if(recording) startSpeech(); }, 400);
+          return;
+        }
+        speechFatal = true;
+        speechTrouble(code);
+      };
+      recog.onend = function(){
+        if(!recording || speechFatal) return;
+        /* Restarting on every end is right for a rep pausing for breath and
+           badly wrong for a recogniser that cannot start at all: with no signal
+           the old build spun through dozens of attempts a second, flattening
+           the battery while still showing "Listening…". Five restarts inside
+           four seconds is not breathing. */
+        var now = Date.now();
+        restartTimes.push(now);
+        restartTimes = restartTimes.filter(function(t){ return now - t < 4000; });
+        if(restartTimes.length >= 5){ speechFatal = true; speechTrouble(lastError); return; }
+        try{ recog.start(); }catch(e){}
+      };
       recog.start();
     }catch(e){ showTyping(true); }
   }
@@ -6212,11 +6317,18 @@ var ZXingWASM=(function(F){"use strict";const fr=[["Aztec","M"],["Codabar","L"],
     if(isInstalled() || location.protocol === 'file:'){ box.style.display = 'none'; return; }
     var ios = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    document.getElementById('install-how').textContent =
-      (ios ? 'Tap the share button at the bottom of Safari, then Add to Home Screen. '
-           : 'Use your browser\u2019s menu, then Install or Add to Home screen. ') +
-      'Until you do, Safari can delete everything this app has saved after a week ' +
-      'of not opening it — events, people and notes included. Installed, it keeps them.';
+    /* The warning has to match the browser it is shown in. Safari's rule is
+       specific and brutal — seven days of not opening the site and every byte
+       goes. Android clears on storage pressure instead: rarer, and with no clock
+       on it. Promising an Android user a seven-day deadline is untrue, and one
+       visibly wrong sentence is how the rest of a warning gets dismissed. */
+    document.getElementById('install-how').textContent = ios
+      ? 'Tap the share button at the bottom of Safari, then Add to Home Screen. ' +
+        'Until you do, Safari deletes everything this app has saved after a week of not ' +
+        'opening it — events, people and notes included. Installed, it keeps them.'
+      : 'Use your browser\u2019s menu, then Install or Add to Home screen. ' +
+        'Until you do, your browser can clear everything this app has saved when the phone ' +
+        'runs short of space — events, people and notes included. Installed, it keeps them.';
     box.style.display = 'flex';
   }
   window.paintInstall = paintInstall;

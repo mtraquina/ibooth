@@ -19,7 +19,7 @@
    and the old ones are deleted on activate. A service worker that serves a
    stale app forever is a worse bug than the one it fixes.  */
 
-var STAMP = '2026-09-05-4147b7';
+var STAMP = '2026-09-07-01f051';
 var CACHE = 'ibooth-' + STAMP;
 
 /* The app and the barcode engine, which is what a rep needs on the floor.
